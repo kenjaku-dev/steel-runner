@@ -21,7 +21,10 @@ const ScreenSettings = (() => {
 
   let sel = 0;
 
-  function enter() { sel = 0; }
+  function enter() {
+    sel = 0;
+    HUD.showWeaponBar(false); // no weapon strip outside gameplay
+  }
 
   function update() {
     const d = Settings.data;

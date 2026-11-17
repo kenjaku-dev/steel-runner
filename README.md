@@ -47,15 +47,15 @@ config/
   settings.js         user settings defaults + localStorage save/load
 systems/
   input.js            keyboard state + edge detection
-  render.js           pixel canvas init, integer scaling, draw helpers
+  render.js           pixel canvas init, integer scaling (reserves the weapon strip)
   backdrop.js         parallax backdrops: one scene per level theme
   fx.js               post effects: scanlines, vignette, hit pulse, flashes
   physics.js          AABB move & collide (axis-separated)
   camera.js           smooth follow camera clamped to world
   weapons.js          data-driven weapon definitions (add weapon = add object)
-  hud.js              in-game HUD: hearts, level tag, boss bar, weapon bar
+  hud.js              canvas HUD + DOM weapon strip BELOW the canvas
   particles.js        bursts, landing dust, impact sparks (pure juice)
-  sound.js            WebAudio synth SFX + chiptune music (no files)
+  sound.js            synth SFX + ONE COMPOSED SONG PER LEVEL (no files)
 entities/
   bullets.js          one bullet system for all weapons + muzzle flashes
   enemies.js          walker / flyer / turret + contact & bullet damage
@@ -90,6 +90,7 @@ tests/
 9. [x] Self-contained level pages: levels/levelN.html = data + game in one file
 10. [x] Double jump + SWORD melee weapon (animated strike arc)
 11. [x] Graphics overhaul: parallax backdrops, post effects, richer sprites
+12. [x] Audio overhaul: one composed song per level + DOM weapon strip
 
 ## Balance (v1.1 — "beatable" patch)
 - Player: normal HP 5→6, hard 3→4; hit grace 1.0s→1.2s; softer knockback (no more pit launches)
@@ -118,14 +119,26 @@ tests/
 - **New HUD**: pixel-art bitmap hearts, a slotted weapon panel with color-coded icons (auto-extends with new weapons), boss bar with phase notches and a top glint, drop shadows on every text
 - **Menu & settings**: the menu got a night scene (gradient sky, moon with craters, two star layers, drifting hills) and an item panel
 
+## Audio (v0.6)
+- **One composed song per level**: every theme in `systems/sound.js` is a hand-built chiptune track on a 16th-note grid, 4 bars looping — bass (triangle) + lead melody (square / saw / triangle per song) + arpeggio shimmer (chord tones, 16ths) + synthesized drum kit (kick / snare / hat):
+  - `grass` FIRST STEPS — bright bouncy A-minor pop, 126 BPM
+  - `desert` DESERT OUTPOST — slow caravan sway with phrygian spice, 104 BPM
+  - `mine` CRYSTAL MINES — dark, sparse, with a slapback lead echo, 92 BPM
+  - `factory` IRON FACTORY — driving industrial saw riff, 148 BPM
+  - `boss` GUARDIAN GATE — relentless harmonic-minor metal, 164 BPM
+- **Best-practice scheduling** (from the classic WebAudio "A Tale of Two Clocks" tutorial): a light 25ms JS timer schedules notes ~120ms ahead on the precise AUDIO clock (never on JS timers), so tempo stays rock-solid even when the page does layout or GC
+- **Click-free envelopes**: every voice gets a short linear attack and a clean release — no pops on note onsets
+- **Master compressor**: music and SFX mix through one DynamicsCompressor, so peaks glue instead of clipping
+- **DOM weapon strip**: the weapon slots moved OUT of the game canvas into a real `#weaponbar` element below it (`boot.js` styles it, `hud.js` syncs it — rebuilds only when the weapon list changes, highlights only on change; the canvas auto-rescales so the strip never overlaps the game)
+
 ## Git
-The repo tags mark playable milestones (`v0.1.0` → `v0.5.0`):
+The repo tags mark playable milestones (`v0.1.0` → `v0.6.0`):
 
 ```bash
 git status                    # what changed
 git add -A && git commit -m "what you changed"   # save a checkpoint
 git log --oneline             # history
-git checkout v0.5.0           # play an old version
+git checkout v0.6.0           # play an old version
 git checkout main             # back to latest
 ```
 

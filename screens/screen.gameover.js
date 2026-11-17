@@ -10,7 +10,7 @@ const ScreenGameOver = (() => {
     { label: 'RETRY FROM CHECKPOINT', action: () => {
         const g = window.__game;
         if (g && g.player) g.player.respawn();
-        Sound.startMusic(LevelLoader.isBoss(g.levelIndex) ? 'boss' : 'game');
+        Sound.startMusic(LevelLoader.get(g.levelIndex).theme);
         Game.switchTo('game', true); // same world — no re-enter
       } },
     { label: 'QUIT TO MENU', action: () => { location.href = '../index.html'; } },

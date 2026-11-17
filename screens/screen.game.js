@@ -24,7 +24,8 @@ const ScreenGame = (() => {
     Bullets.clear();
     Particles.clear();
     Fx.reset(); // fresh page: no leftover hit pulse / flash
-    Sound.startMusic(LevelLoader.isBoss(levelIndex) ? 'boss' : 'game');
+    HUD.showWeaponBar(true); // DOM weapon strip below the canvas
+    Sound.startMusic(level.theme); // each level plays its own song
 
     world = {
       w: level.w, h: level.h,
@@ -71,8 +72,9 @@ const ScreenGame = (() => {
 
     // music retry: a freshly navigated page's AudioContext starts
     // suspended until the user's first input; startMusic is a no-op
-    // once its theme is playing, so this is free after the first hit
-    Sound.startMusic(LevelLoader.isBoss(levelIndex) ? 'boss' : 'game');
+    // once this level's song is playing, so it is free after the
+    // first successful hit
+    Sound.startMusic(level.theme);
 
     if (introT > 0) {
       introT -= dt;
@@ -262,6 +264,7 @@ const ScreenGame = (() => {
 
     // ---- HUD (screen space, own module) ----
     HUD.draw({ player, world, level, levelIndex, hasKey });
+    HUD.weaponBar(player); // DOM strip below the canvas
 
     // post effects ABOVE everything (pause/gameover overlays inherit)
     Fx.draw();

@@ -15,10 +15,17 @@ const Render = (() => {
     window.addEventListener('resize', resize);
   }
 
-  // Integer scaling only -> crisp pixels at any window size
+  // Integer scaling only -> crisp pixels at any window size.
+  // When the DOM weapon strip below the canvas is visible, reserve
+  // its height so the canvas never slides underneath it.
   function resize() {
     const sx = Math.floor(window.innerWidth / W);
-    const sy = Math.floor(window.innerHeight / H);
+    let reserve = 0;
+    const bar = document.getElementById('weaponbar');
+    if (bar && bar.classList.contains('on')) {
+      reserve = (Number(bar.offsetHeight) || 0) + 10;
+    }
+    const sy = Math.floor((window.innerHeight - reserve) / H);
     const s = Math.max(1, Math.min(sx, sy));
     canvas.style.width = W * s + 'px';
     canvas.style.height = H * s + 'px';

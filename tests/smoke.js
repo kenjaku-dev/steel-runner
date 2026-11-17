@@ -20,7 +20,21 @@ const ctxMock = {
   createRadialGradient: () => ({ addColorStop() {} }),  // fx vignette
 };
 const canvasMock = { getContext: () => ctxMock, style: {}, width: 0, height: 0 };
-globalThis.document = { getElementById: () => canvasMock };
+// the DOM weapon strip records toggle calls so asserts can verify it
+const weaponBarState = {};
+const weaponBarMock = {
+  classList: {
+    toggle(c, v) { weaponBarState[c] = v; },
+    contains: () => false,
+  },
+  innerHTML: '',
+  querySelectorAll: () => [],
+  offsetHeight: 40,
+};
+globalThis.document = {
+  getElementById: (id) =>
+    id === 'game' ? canvasMock : id === 'weaponbar' ? weaponBarMock : null,
+};
 globalThis.window = globalThis;
 globalThis.innerWidth = 1440;
 globalThis.innerHeight = 810;
@@ -525,8 +539,22 @@ Fx.flash(0.2);
 Fx.update(0.3); Fx.draw();
 Fx.reset();
 
-// menu must build its night scene (gradient cache + stars) on enter
+// music: every level theme is its own song (legacy 'game' still maps)
+assert.strictEqual(typeof Sound.startMusic, 'function', 'Sound.startMusic missing');
+for (const s of ['grass', 'desert', 'mine', 'factory', 'boss']) {
+  Sound.startMusic(s); // no-op without WebAudio, but must not crash
+}
+Sound.startMusic('game');
+Sound.stopMusic();
+
+// DOM weapon strip: hidden in menus, shown in game, synced safely
+assert.strictEqual(typeof HUD.weaponBar, 'function', 'HUD.weaponBar missing');
 Game.switchTo('menu');
 pump(3);
+assert.strictEqual(weaponBarState.on, false, 'menu must hide the DOM weapon bar');
+Game.switchTo('game');
+pump(3);
+assert.strictEqual(weaponBarState.on, true, 'game must show the DOM weapon bar');
+HUD.weaponBar(window.__game.player); // rebuild + highlight without a layout engine
 
-console.log('SMOKE TEST PASSED — steps 1-9 OK: loop, screens, level pages, doors, boss, pause, game over, hub, polish, graphics');
+console.log('SMOKE TEST PASSED — steps 1-9 OK: loop, screens, level pages, doors, boss, pause, game over, hub, polish, graphics, music, weapon bar');

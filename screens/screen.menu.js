@@ -39,6 +39,7 @@ const ScreenMenu = (() => {
   function enter() {
     sel = 0;
     Sound.stopMusic(); // menus are quiet
+    HUD.showWeaponBar(false); // no weapon strip in menus
     t = 0;
     Fx.reset();        // fresh page: no leftover flashes
     skyGrad = null;    // rebuild gradient for this canvas size
