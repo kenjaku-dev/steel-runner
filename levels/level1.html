@@ -1,15 +1,19 @@
-/* =============================================================
- * level1.js — FIRST STEPS (grass)
- * Level data only. Schema:
- *   name/theme  shown in intro card + art palette
- *   w/h         world size in px
- *   spawn       player start
- *   exit        door position (a 16x32 rect is derived from it)
- *   key?        optional {x,y} pickup -> door locked until grabbed
- *   platforms   ground segments (h >= 20) + floating platforms (h = 10)
- *   enemies     spawn list (types from entities/enemies.js)
- * ============================================================= */
-LevelLoader.register({
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEEL RUNNER — LEVEL 1: FIRST STEPS</title>
+</head>
+<body>
+<!-- =====================================================
+  LEVEL 1 — self-contained page: the level data AND the full
+  game live in this ONE file. Edit the data block below to
+  change this level; boot.js (project root) loads the engine.
+===================================================== -->
+<script src="../boot.js"></script>
+<script id="level-data">
+window.__START_LEVEL = 1; // boot straight into the game
+LevelLoader.solo(0, {
   name: 'FIRST STEPS',
   theme: 'grass',
   w: 1720, h: 270,
@@ -39,3 +43,6 @@ LevelLoader.register({
     { type: 'walker', x: 1300, y: 236 },
   ],
 });
+</script>
+</body>
+</html>

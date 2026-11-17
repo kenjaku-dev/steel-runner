@@ -1,8 +1,19 @@
-/* =============================================================
- * level2.js — DESERT OUTPOST (desert)
- * Introduces turrets + the KEY/LOCKED DOOR mechanic.
- * ============================================================= */
-LevelLoader.register({
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEEL RUNNER — LEVEL 2: DESERT OUTPOST</title>
+</head>
+<body>
+<!-- =====================================================
+  LEVEL 2 — self-contained page: the level data AND the full
+  game live in this ONE file. Edit the data block below to
+  change this level; boot.js (project root) loads the engine.
+===================================================== -->
+<script src="../boot.js"></script>
+<script id="level-data">
+window.__START_LEVEL = 2; // boot straight into the game
+LevelLoader.solo(1, {
   name: 'DESERT OUTPOST',
   theme: 'desert',
   w: 1880, h: 270,
@@ -36,3 +47,6 @@ LevelLoader.register({
     { type: 'turret', x: 1450, y: 234 },
   ],
 });
+</script>
+</body>
+</html>

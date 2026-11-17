@@ -2,14 +2,14 @@
  * screen.pause.js — PAUSE overlay (own file for fast editing).
  * Draws the frozen game frame behind a dim panel.
  * Items: RESUME (same world) / RESTART LEVEL (fresh attempt) /
- * QUIT TO MENU. ESC = resume.
+ * QUIT TO MENU (back to the hub page). ESC = resume.
  * ============================================================= */
 const ScreenPause = (() => {
   let sel = 0;
   const items = [
     { label: 'RESUME', action: () => Game.switchTo('game', true) },  // resume frozen world
     { label: 'RESTART LEVEL', action: () => Game.switchTo('game') }, // re-enter = fresh attempt
-    { label: 'QUIT TO MENU', action: () => Game.switchTo('menu') },
+    { label: 'QUIT TO MENU', action: () => { location.href = '../index.html'; } },
   ];
 
   function enter() {

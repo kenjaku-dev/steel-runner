@@ -18,9 +18,12 @@ No build tools, no dependencies. Open `index.html` in a browser and play.
 ## Pages (open any of them — no server needed)
 | Page | What it is |
 |---|---|
-| `index.html` | Hub: menu + settings + full game. Deep-link: `index.html?level=3` |
-| `level1.html` … `level5.html` | Direct-launch page per level (open = play/test that level instantly) |
-| `boot.js` | SINGLE SOURCE of page HTML/CSS + script load order — every page includes only this |
+| `index.html` | Hub: menu + settings. START opens `levels/level1.html`. Deep-link: `index.html?level=3` |
+| `levels/level1.html` … `levels/level5.html` | SELF-CONTAINED level pages: the level's data AND the whole game in ONE file — open = play/test that level instantly |
+| `boot.js` | SINGLE SOURCE of page HTML/CSS + script load order — every page includes only this (auto-detects `../` inside `levels/`) |
+
+Level progression is page navigation: a level's door opens
+`level(N+1).html`, and the boss page's victory returns to the hub.
 
 ## Testing
 The real game code runs headless in Node with a simulated browser:
@@ -29,13 +32,13 @@ The real game code runs headless in Node with a simulated browser:
 node tests/smoke.js
 ```
 
-It boots all screens, walks levels 1–5, fights the boss, and checks
-pause / game-over / pages. Run it after every change.
+It boots all screens, walks the five level pages through their doors,
+fights the boss, and checks pause / game-over / the hub — simulating
+page navigation with a `location` stub. Run it after every change.
 
 ## Structure (each concern = one file, for fast editing & easy scaling)
 ```
-index.html            hub page: menu + settings + all levels (?level=N)
-level1..5.html        direct-launch pages per level
+index.html            hub page: menu + settings (?level=N deep link)
 boot.js               page structure + script load order (edit here)
 main.js               60 FPS fixed-timestep loop + screen state machine
 config/
@@ -55,17 +58,17 @@ entities/
   enemies.js          walker / flyer / turret + contact & bullet damage
   player.js           player physics + pixel sprite + firing + health
   boss.js             MECHA GUARDIAN: 3 phases, resets on player death
-levels/                every level = one data file (fast edit, easy scale)
+levels/                every level = ONE self-contained html page
   level.loader.js     registry + progression + themes (5th level = boss)
-  level1.js           FIRST STEPS (grass)
-  level2.js           DESERT OUTPOST (key + locked door)
-  level3.js           CRYSTAL MINES (climb + flyers)
-  level4.js           IRON FACTORY (gauntlet)
-  level5.js           GUARDIAN GATE (boss arena)
+  level1.html         FIRST STEPS (grass) — data + game in one file
+  level2.html         DESERT OUTPOST (key + locked door)
+  level3.html         CRYSTAL MINES (climb + flyers)
+  level4.html         IRON FACTORY (gauntlet)
+  level5.html         GUARDIAN GATE (boss arena)
 screens/              every screen = own file, interface {enter,update,draw}
-  screen.menu.js      main menu
+  screen.menu.js      main menu (START -> levels/level1.html)
   screen.settings.js  settings screen
-  screen.game.js      game screen: plays levels via LevelLoader
+  screen.game.js      game screen: one level per page, doors navigate
   screen.pause.js     pause overlay (resume / restart level / quit)
   screen.gameover.js  game over (retry from checkpoint / quit)
 tests/
@@ -81,6 +84,7 @@ tests/
 6. [x] Level 5 + first boss (3 phases)
 7. [x] HUD, pause, game over screens wiring
 8. [x] Polish: particles, sound, jump feel, difficulty balance
+9. [x] Self-contained level pages: levels/levelN.html = data + game in one file
 
 ## Balance (v1.1 — "beatable" patch)
 - Player: normal HP 5→6, hard 3→4; hit grace 1.0s→1.2s; softer knockback (no more pit launches)
@@ -96,19 +100,19 @@ tests/
 - Jump feel: landing squash & stretch + dust when dropping from height
 
 ## Git
-The repo tags mark playable milestones (`v0.1.0`, `v0.2.0`):
+The repo tags mark playable milestones (`v0.1.0`, `v0.2.0`, `v0.3.0`):
 
 ```bash
 git status                    # what changed
 git add -A && git commit -m "what you changed"   # save a checkpoint
 git log --oneline             # history
-git checkout v0.2.0           # play an old version
+git checkout v0.3.0           # play an old version
 git checkout main             # back to latest
 ```
 
 ## How to extend
 - **New game file:** add ONE line to `boot.js` `SCRIPTS` — every page loads it automatically.
-- **New level:** create `levels/levelN.js` calling `LevelLoader.register({...})`, add it to `boot.js`, and copy a `levelN.html` launcher (change `__START_LEVEL` + title) — level 5, 10, 15... auto-flagged as boss.
+- **New level:** copy `levels/level5.html` to `levels/level6.html`, change the `<title>` and the data block (`window.__START_LEVEL = 6`, `LevelLoader.solo(5, {...})` with your level data) — that's the whole level, nothing else to wire. The door auto-navigates to `level7.html`, and slots 4, 9, 14... are auto-flagged as boss levels (a boss-level door ends in the victory overlay instead).
 - **New weapon:** add one object in `systems/weapons.js` — number keys extend automatically.
 - **New screen:** create `screens/screen.X.js` with `{enter, update, draw}` and register it in `main.js` + `boot.js`.
 - **Tweak game feel:** edit `config/game.config.js` only.

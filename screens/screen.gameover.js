@@ -13,7 +13,7 @@ const ScreenGameOver = (() => {
         Sound.startMusic(LevelLoader.isBoss(g.levelIndex) ? 'boss' : 'game');
         Game.switchTo('game', true); // same world — no re-enter
       } },
-    { label: 'QUIT TO MENU', action: () => Game.switchTo('menu') },
+    { label: 'QUIT TO MENU', action: () => { location.href = '../index.html'; } },
   ];
 
   function enter() {

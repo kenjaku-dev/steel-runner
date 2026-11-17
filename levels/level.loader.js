@@ -7,6 +7,7 @@
 const LevelLoader = (() => {
   const LEVELS = [];
   let index = 0;
+  let soloData = null, soloIndex = 0; // single-page mode (levels/*.html)
 
   // 16-bit palettes per world theme (tokens for level art)
   const THEMES = {
@@ -32,16 +33,26 @@ const LevelLoader = (() => {
     },
   };
 
+  // multi-level mode: push one level per data file (tests / tools)
   function register(data) {
     LEVELS.push(data);
   }
 
+  // single-page mode (levels/*.html): this page carries exactly ONE
+  // level at its ABSOLUTE slot, so isBoss() and door logic keep working
+  function solo(slot, data) {
+    soloIndex = slot;
+    soloData = data;
+    index = slot;
+  }
+
   function get(i) {
+    if (soloData) return i === soloIndex ? soloData : null;
     return LEVELS[i];
   }
 
   function count() {
-    return LEVELS.length;
+    return soloData ? soloIndex + 1 : LEVELS.length;
   }
 
   // level 5, 10, 15... are boss levels
@@ -50,11 +61,14 @@ const LevelLoader = (() => {
   }
 
   function go(i) {
-    index = Math.max(0, Math.min(i, LEVELS.length - 1));
+    index = Math.max(0, Math.min(i, count() - 1));
   }
 
-  // advance to the next level; false when there is none (victory)
+  // advance to the next level; false when there is none (victory).
+  // In single-page mode this is always false: level pages advance
+  // by navigating to the next html file instead.
   function next() {
+    if (soloData) return false;
     if (index + 1 < LEVELS.length) {
       index++;
       return true;
@@ -63,7 +77,7 @@ const LevelLoader = (() => {
   }
 
   return {
-    LEVELS, THEMES, register, get, count, isBoss, go, next,
+    LEVELS, THEMES, register, solo, get, count, isBoss, go, next,
     get current() { return index; },
   };
 })();

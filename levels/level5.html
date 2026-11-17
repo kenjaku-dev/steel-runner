@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEEL RUNNER — LEVEL 5: GUARDIAN GATE (BOSS)</title>
+</head>
+<body>
+<!-- =====================================================
+  LEVEL 5 (BOSS) — self-contained page: the level data AND the
+  full game live in this ONE file. Edit the data block below to
+  change the arena; edit entities/boss.js for the boss behavior.
+  The door opens only after the MECHA GUARDIAN falls, then the
+  victory overlay returns to the hub (../index.html).
+===================================================== -->
+<script src="../boot.js"></script>
+<script id="level-data">
+window.__START_LEVEL = 5; // boot straight into the boss fight
+LevelLoader.solo(4, {
+  name: 'GUARDIAN GATE',
+  theme: 'boss',
+  w: 960, h: 270,
+  spawn: { x: 40, y: 200 },
+  exit: { x: 900, y: 214 },
+  bossSpawn: { x: 800, y: 202 },
+  platforms: [
+    { x: 0,   y: 246, w: 960, h: 24 },
+    { x: 140, y: 180, w: 72, h: 10 },
+    { x: 748, y: 180, w: 72, h: 10 },
+    { x: 444, y: 140, w: 72, h: 10 },
+  ],
+  enemies: [],
+});
+</script>
+</body>
+</html>

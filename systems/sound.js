@@ -130,6 +130,14 @@ const Sound = (() => {
     if (!init()) return;
     if (Settings.data.musicVol <= 0) { stopMusic(); return; }
     if (musicKind === kind) return; // already playing this theme
+    // Autoplay policy: right after a page navigation the context is
+    // suspended until the user's first input. Try to resume; if it is
+    // still suspended skip this call (notes would pile up at t=0) —
+    // the game screen retries startMusic every frame until unlocked.
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+      if (ctx.state === 'suspended') return;
+    }
     musicKind = kind;
     musicStep = 0;
     musicNext = ctx.currentTime;

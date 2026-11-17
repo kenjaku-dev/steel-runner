@@ -1,8 +1,10 @@
 /* =============================================================
- * screen.game.js — THE GAME: plays levels from levels/ via
- * LevelLoader. Touching an open door advances to the next level.
- * Doors with a key stay locked until the key is grabbed.
- * Every 5th level is a boss level (boss arrives in step 6).
+ * screen.game.js — THE GAME: plays the ONE level registered by
+ * the current page (LevelLoader.solo). Touching an open door
+ * navigates to the next level's html page (levels advance by
+ * page navigation); the boss page's door ends in a victory
+ * overlay that returns to the hub. Doors with a key stay
+ * locked until the key is grabbed. Every 5th level is a boss.
  * ============================================================= */
 const ScreenGame = (() => {
   let level, levelIndex, world, player;
@@ -59,9 +61,16 @@ const ScreenGame = (() => {
 
   function update(dt) {
     if (victory) {
-      if (Input.confirm() || Input.cancel()) Game.switchTo('menu');
+      // boss beaten: Enter/Esc returns to the hub page
+      if (Input.confirm() || Input.cancel()) location.href = '../index.html';
       return;
     }
+
+    // music retry: a freshly navigated page's AudioContext starts
+    // suspended until the user's first input; startMusic is a no-op
+    // once its theme is playing, so this is free after the first hit
+    Sound.startMusic(LevelLoader.isBoss(levelIndex) ? 'boss' : 'game');
+
     if (introT > 0) {
       introT -= dt;
       if (Input.confirm()) introT = 0;
@@ -103,10 +112,19 @@ const ScreenGame = (() => {
       Sound.play('pickup');
     }
 
-    // exit door -> next level, or victory when none is left
+    // exit door -> next page (or in-page advance when several levels
+    // share one page), or victory when this is the boss page
     if (!doorLocked() && Physics.overlap(player, doorRect())) {
-      if (LevelLoader.next()) { Sound.play('door'); enter(); }
-      else { victory = true; Sound.stopMusic(); Sound.play('victory'); }
+      if (LevelLoader.next()) {
+        Sound.play('door'); enter(); // registry mode: next level is here
+      } else if (LevelLoader.isBoss(levelIndex)) {
+        victory = true;              // boss page: victory -> hub
+        Sound.stopMusic();
+        Sound.play('victory');
+      } else {
+        Sound.play('door');          // walk through into the next page
+        location.href = 'level' + (levelIndex + 2) + '.html';
+      }
       return;
     }
 
@@ -189,13 +207,13 @@ const ScreenGame = (() => {
       });
     }
 
-    // victory (level 5 boss arrives in step 6)
+    // victory overlay (boss page): Enter/Esc returns to the hub
     if (victory) {
       Render.box(0, 0, Render.w, Render.h, { fill: 'rgba(6,6,12,0.72)' });
       Render.text('YOU BEAT THE GUARDIAN!', cx, 100, {
         size: CONFIG.UI.sizeTitle, color: C.primary, align: 'center',
       });
-      Render.text('ALL 5 LEVELS CLEARED — MORE COMING SOON', cx, 140, {
+      Render.text('THE GATE IS OPEN — MORE LEVELS COMING SOON', cx, 140, {
         size: CONFIG.UI.sizeItem, color: C.text, align: 'center',
       });
       Render.text('ENTER = MENU', cx, 168, {

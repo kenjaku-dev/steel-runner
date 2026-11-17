@@ -1,5 +1,8 @@
 /* Smoke test: run the game's real JS in a simulated browser and
- * verify the 60FPS loop, screen switching, input and settings persistence. */
+ * verify the 60FPS loop, screen switching, input and settings persistence.
+ * Levels are self-contained PAGES now (levels/levelN.html): the test
+ * simulates page navigation with a location stub and runs each page's
+ * inline level-data script when the player "arrives" on it. */
 const fs = require('fs');
 const vm = require('vm');
 const DIR = '/home/achraf/project testing/2d plat game';
@@ -16,6 +19,7 @@ globalThis.document = { getElementById: () => canvasMock };
 globalThis.window = globalThis;
 globalThis.innerWidth = 1440;
 globalThis.innerHeight = 810;
+globalThis.location = { href: '' }; // navigation stub (screens/pages set href)
 const store = {};
 globalThis.localStorage = {
   getItem: (k) => (k in store ? store[k] : null),
@@ -62,6 +66,22 @@ function release(k) {
   globalThis.dispatchEvent(ev);
 }
 
+/* ---------- level pages: data lives in ONE file per level ---------- */
+// levels/levelN.html carries its data in <script id="level-data">;
+// "opening the page" = running that script, which registers the level
+// at its absolute slot (LevelLoader.solo) and boots into the game.
+function dataScript(n) {
+  const html = fs.readFileSync(`${DIR}/levels/level${n}.html`, 'utf8');
+  const m = html.match(/<script id="level-data">([\s\S]*?)<\/script>/);
+  if (!m) throw new Error(`levels/level${n}.html has no level-data script`);
+  return m[1];
+}
+function gotoPage(n) {
+  vm.runInThisContext(dataScript(n), { filename: `levels/level${n}.html#level-data` });
+  Game.switchTo('game'); // the page boots straight into the game
+  pump(2);
+}
+
 /* ---------- load all game files as ONE script (shared scope) ---------- */
 // canonical file list parsed from boot.js (single source of truth —
 // the smoke test can never forget a file again)
@@ -106,11 +126,15 @@ key('ArrowDown'); pump(1); key('ArrowDown'); pump(1); // DIFFICULTY
 key('ArrowRight'); pump(1);
 assert.strictEqual(Settings.data.difficulty, 'hard', 'choice did not cycle');
 
-// back to menu, start game
+// back to menu; START opens the first level PAGE (navigation model)
 key('Escape'); pump(2);
 assert.strictEqual(last, 'menu', 'ESC did not return to menu');
 key('Enter'); pump(5);
-assert.strictEqual(last, 'game', 'START did not launch game');
+assert.strictEqual(location.href, 'levels/level1.html', 'START did not open the level 1 page');
+location.href = ''; // simulate the browser arriving on levels/level1.html
+gotoPage(1);
+assert.strictEqual(last, 'game', 'level 1 page did not boot the game');
+assert.strictEqual(globalThis.__game.levelIndex, 0, 'level 1 page not on slot 0');
 
 /* ---------- step 2: player physics ---------- */
 const p = globalThis.__game.player;
@@ -268,7 +292,7 @@ boxesDrawn = 0;
 pump(120);
 assert.ok(boxesDrawn > 100, 'game screen never drew');
 
-/* ---------- step 7: pause / HUD wiring ---------- */
+/* ---------- pause / game over wiring ---------- */
 // ESC pauses instead of quitting
 key('Escape'); pump(2);
 assert.strictEqual(last, 'pause', 'ESC did not open pause');
@@ -284,69 +308,79 @@ assert.strictEqual(globalThis.__game.levelIndex, 0, 'restart changed level');
 const p2 = globalThis.__game.player; // restart re-entered: fresh player
 assert.strictEqual(p2.hp, p2.maxHp, 'restart did not reset hp');
 
-// pause -> QUIT TO MENU
+// pause -> QUIT TO MENU: navigates back to the hub page
 key('Escape'); pump(2);
 key('ArrowDown'); pump(1); key('ArrowDown'); pump(1); key('Enter'); pump(2);
-assert.strictEqual(last, 'menu', 'pause QUIT did not reach menu');
+assert.strictEqual(location.href, '../index.html', 'pause QUIT did not navigate to the hub');
+location.href = '';
 
-/* ---------- step 5: levels ---------- */
-assert.strictEqual(LevelLoader.count(), 5, 'expected 5 levels registered');
+/* ---------- step 5: level pages & door navigation ---------- */
+// structure: every level is ONE self-contained page in levels/
+for (let i = 1; i <= 5; i++) {
+  const html = fs.readFileSync(`${DIR}/levels/level${i}.html`, 'utf8');
+  assert.ok(html.includes(`__START_LEVEL = ${i}`), `levels/level${i}.html start-level hook wrong`);
+  assert.ok(html.includes('id="level-data"'), `levels/level${i}.html missing its data block`);
+  assert.ok(html.includes('src="../boot.js"'), `levels/level${i}.html must load ../boot.js`);
+}
 assert.strictEqual(LevelLoader.isBoss(4), true, 'level 5 must be boss');
 assert.ok(!LevelLoader.isBoss(3), 'level 4 must not be boss');
 
-// fresh run: menu -> START -> level 1
-key('Enter'); pump(5);
-assert.strictEqual(LevelLoader.current, 0, 'START should begin at level 1');
-assert.strictEqual(globalThis.__game.levelIndex, 0, 'game screen not on level 1');
-
-// touch the level-1 door -> auto-advance to level 2
+// page 1: touch the open door -> navigate to level2.html
+gotoPage(1);
 let gp = globalThis.__game.player;
 gp.x = 1652; gp.y = 230; gp.vx = 0; gp.vy = 0;
 pump(3);
-assert.strictEqual(LevelLoader.current, 1, 'door did not advance to level 2');
-assert.strictEqual(globalThis.__game.levelIndex, 1, 'game did not rebuild level 2');
+assert.strictEqual(location.href, 'level2.html', 'door did not navigate to level2.html');
 
-// level 2: locked door must NOT advance without the key
+// arrive on page 2: its door is LOCKED (key mechanic)
+location.href = '';
+gotoPage(2);
 gp = globalThis.__game.player;
 gp.x = 1832; gp.y = 230; gp.vx = 0; gp.vy = 0;
 pump(3);
-assert.strictEqual(LevelLoader.current, 1, 'locked door must not advance');
+assert.strictEqual(location.href, '', 'locked door must not navigate');
 
 // grab the key floating above its platform
 gp.x = 1302; gp.y = 138; gp.vx = 0; gp.vy = 0;
 pump(2);
 assert.strictEqual(globalThis.__game.hasKey, true, 'key not picked up');
 
-// door opens now
+// door opens now -> level3.html
 gp.x = 1832; gp.y = 230; gp.vx = 0; gp.vy = 0;
 pump(3);
-assert.strictEqual(LevelLoader.current, 2, 'keyed door did not advance to level 3');
+assert.strictEqual(location.href, 'level3.html', 'keyed door did not navigate to level3.html');
 
-// level 3 door -> level 4
+// page 3 -> page 4
+location.href = '';
+gotoPage(3);
 gp = globalThis.__game.player;
 gp.x = 1752; gp.y = 230; gp.vx = 0; gp.vy = 0;
 pump(3);
-assert.strictEqual(LevelLoader.current, 3, 'level 3 door did not advance');
+assert.strictEqual(location.href, 'level4.html', 'level 3 door did not navigate');
 
-// level 4 door -> level 5 (boss arena — step 6)
+// page 4 -> page 5 (boss arena)
+location.href = '';
+gotoPage(4);
 gp = globalThis.__game.player;
 gp.x = 1952; gp.y = 230; gp.vx = 0; gp.vy = 0;
 pump(3);
-assert.strictEqual(LevelLoader.current, 4, 'level 4 door did not advance to the boss level');
-assert.strictEqual(globalThis.__game.levelIndex, 4, 'game did not rebuild on boss level');
-assert.ok(globalThis.__game.world.boss, 'boss missing in level 5');
-key('Escape'); pump(2);
-assert.strictEqual(last, 'pause', 'ESC did not open pause on boss level');
-key('ArrowDown'); pump(1); key('ArrowDown'); pump(1); key('Enter'); pump(2);
-assert.strictEqual(last, 'menu', 'pause QUIT did not reach menu');
+assert.strictEqual(location.href, 'level5.html', 'level 4 door did not navigate to the boss page');
 
-/* ---------- step 6: boss (level 5 — MECHA GUARDIAN) ---------- */
-key('Enter'); pump(5);            // START from menu
-assert.strictEqual(LevelLoader.current, 0, 'START begins at level 1');
-LevelLoader.go(4);                // jump straight to the boss arena
-Game.switchTo('game');            // re-enter rebuilds the world on level 5
-pump(2);
-assert.strictEqual(globalThis.__game.levelIndex, 4, 'not on boss level');
+// arrive on the boss page; pause QUIT returns to the hub
+location.href = '';
+gotoPage(5);
+assert.strictEqual(globalThis.__game.levelIndex, 4, 'game did not load the boss page');
+assert.ok(globalThis.__game.world.boss, 'boss missing on the boss page');
+key('Escape'); pump(2);
+assert.strictEqual(last, 'pause', 'ESC did not open pause on the boss page');
+key('ArrowDown'); pump(1); key('ArrowDown'); pump(1); key('Enter'); pump(2);
+assert.strictEqual(location.href, '../index.html', 'pause QUIT did not navigate to the hub');
+location.href = '';
+
+/* ---------- step 6: boss (page 5 — MECHA GUARDIAN) ---------- */
+// arrive fresh on the boss page (its page-data is already registered)
+gotoPage(5);
+assert.strictEqual(globalThis.__game.levelIndex, 4, 'not on the boss page');
 const boss = globalThis.__game.world.boss;
 assert.ok(boss, 'boss not created');
 assert.strictEqual(boss.hp, 60, 'boss should start at 60 hp');
@@ -387,7 +421,7 @@ assert.strictEqual(bp.dead, false, 'player still dead after retry');
 assert.strictEqual(bp.hp, bp.maxHp, 'player hp not restored');
 assert.strictEqual(Bullets.count(), 0, 'bullets not cleared on death');
 
-// final blow -> door unlocks -> victory -> menu
+// final blow -> door unlocks -> victory -> hub page
 boss.hurt(60);
 pump(2);
 assert.ok(boss.hp <= 0, 'boss did not die');
@@ -395,7 +429,8 @@ bp.x = 892; bp.y = 230; bp.vx = 0; bp.vy = 0;   // boss door at x 900
 pump(3);
 assert.strictEqual(globalThis.__game.victory, true, 'boss door did not trigger victory');
 key('Enter'); pump(2);
-assert.strictEqual(last, 'menu', 'victory did not return to menu');
+assert.strictEqual(location.href, '../index.html', 'victory did not navigate to the hub');
+location.href = '';
 
 // keyup clears held state without crashing
 key('ArrowLeft', 'keyup'); key('a', 'keyup'); pump(10);
@@ -403,14 +438,16 @@ key('ArrowLeft', 'keyup'); key('a', 'keyup'); pump(10);
 // FPS counter on
 Settings.data.showFps = true; pump(10);
 
-/* ---------- step 7: pages (boot.js single source) ---------- */
+/* ---------- step 7: hub page (boot.js = single source) ---------- */
 const idxHtml = fs.readFileSync(`${DIR}/index.html`, 'utf8');
 assert.ok(idxHtml.includes('boot.js'), 'index.html must load boot.js');
 assert.ok(idxHtml.includes('URLSearchParams'), 'index.html lost the ?level deep link');
+assert.ok(idxHtml.includes("location.href = 'levels/level'"), 'hub ?level redirect must go to levels/');
+
+// the old per-level launchers/data files must be gone (one page per level)
 for (let i = 1; i <= 5; i++) {
-  const html = fs.readFileSync(`${DIR}/level${i}.html`, 'utf8');
-  assert.ok(html.includes(`__START_LEVEL = ${i}`), `level${i}.html start-level hook wrong`);
-  assert.ok(html.includes('boot.js'), `level${i}.html must load boot.js`);
+  assert.ok(!fs.existsSync(`${DIR}/level${i}.html`), `old root level${i}.html still exists`);
+  assert.ok(!fs.existsSync(`${DIR}/levels/level${i}.js`), `old levels/level${i}.js still exists`);
 }
 
 /* ---------- step 8: polish systems (particles / sound / shake) ---------- */
@@ -439,4 +476,4 @@ assert.ok(Camera.shaking, 'camera shake did not start');
 Camera.update(0.3);
 assert.ok(!Camera.shaking, 'camera shake never ended');
 
-console.log('SMOKE TEST PASSED — steps 1-8 OK: loop, screens, levels, boss, pause, game over, pages, polish');
+console.log('SMOKE TEST PASSED — steps 1-8 OK: loop, screens, level pages, doors, boss, pause, game over, hub, polish');

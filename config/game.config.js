@@ -4,7 +4,7 @@
  * ============================================================= */
 const CONFIG = {
   TITLE: 'STEEL RUNNER',
-  VERSION: '0.2.0',
+  VERSION: '0.3.0',
 
   // Internal pixel resolution (16-bit look) — scaled up by integer factor
   CANVAS: { width: 480, height: 270 },

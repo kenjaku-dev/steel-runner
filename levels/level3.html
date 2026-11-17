@@ -1,8 +1,19 @@
-/* =============================================================
- * level3.js — CRYSTAL MINES (mine)
- * Vertical climb route + flyers guarding the pits.
- * ============================================================= */
-LevelLoader.register({
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEEL RUNNER — LEVEL 3: CRYSTAL MINES</title>
+</head>
+<body>
+<!-- =====================================================
+  LEVEL 3 — self-contained page: the level data AND the full
+  game live in this ONE file. Edit the data block below to
+  change this level; boot.js (project root) loads the engine.
+===================================================== -->
+<script src="../boot.js"></script>
+<script id="level-data">
+window.__START_LEVEL = 3; // boot straight into the game
+LevelLoader.solo(2, {
   name: 'CRYSTAL MINES',
   theme: 'mine',
   w: 1800, h: 270,
@@ -37,3 +48,6 @@ LevelLoader.register({
     { type: 'turret', x: 1350, y: 234 },
   ],
 });
+</script>
+</body>
+</html>

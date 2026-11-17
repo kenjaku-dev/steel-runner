@@ -2,7 +2,7 @@
  * main.js — boot, screen state machine, fixed-timestep 60FPS loop.
  * Every screen implements: { enter(), update(dt), draw() }
  * ============================================================= */
-(function boot() {
+function boot() {
   const canvas = document.getElementById('game');
   Render.init(canvas);
   Settings.load();
@@ -77,4 +77,13 @@
   }
 
   requestAnimationFrame(frame);
-})();
+}
+
+// Defer boot until the whole page has parsed: document.write'd scripts
+// (main.js included) run BEFORE the page's inline level-data block,
+// so waiting for DOMContentLoaded guarantees the data is registered.
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot(); // tests / non-parsed contexts boot immediately
+}

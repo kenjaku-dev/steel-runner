@@ -7,13 +7,16 @@
 </head>
 <body>
 <!-- =====================================================
-  HUB PAGE: menu + settings + full game (levels 1 -> 5).
-  All page structure & scripts come from boot.js (single source).
+  HUB PAGE: menu + settings. START opens levels/level1.html;
+  each level page continues to the next, and the boss level
+  returns here after victory.
   Deep-link any level: index.html?level=3
 ===================================================== -->
 <script>
-  const lvl = new URLSearchParams(location.search).get('level');
-  if (lvl && Number(lvl) >= 1 && Number(lvl) <= 5) window.__START_LEVEL = Number(lvl);
+  const q = new URLSearchParams(location.search).get('level');
+  if (q && Number(q) >= 1 && Number(q) <= 5) {
+    location.href = 'levels/level' + Number(q) + '.html';
+  }
 </script>
 <script src="boot.js"></script>
 </body>

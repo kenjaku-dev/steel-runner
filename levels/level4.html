@@ -1,8 +1,19 @@
-/* =============================================================
- * level4.js — IRON FACTORY (factory)
- * The gauntlet: everything at once before the boss.
- * ============================================================= */
-LevelLoader.register({
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEEL RUNNER — LEVEL 4: IRON FACTORY</title>
+</head>
+<body>
+<!-- =====================================================
+  LEVEL 4 — self-contained page: the level data AND the full
+  game live in this ONE file. Edit the data block below to
+  change this level; boot.js (project root) loads the engine.
+===================================================== -->
+<script src="../boot.js"></script>
+<script id="level-data">
+window.__START_LEVEL = 4; // boot straight into the game
+LevelLoader.solo(3, {
   name: 'IRON FACTORY',
   theme: 'factory',
   w: 2000, h: 270,
@@ -41,3 +52,6 @@ LevelLoader.register({
     { type: 'flyer',  x: 1250, y: 80 },
   ],
 });
+</script>
+</body>
+</html>

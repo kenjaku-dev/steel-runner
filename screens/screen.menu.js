@@ -3,8 +3,10 @@
  * One primary CTA: START. Keyboard: Up/Down, Enter, Esc.
  * ============================================================= */
 const ScreenMenu = (() => {
+  // START = navigate to the first level page. The hub only hosts
+  // menu + settings; each level lives in its own self-contained page.
   const items = [
-    { label: 'START', action: () => { LevelLoader.go(0); Game.switchTo('game'); } },
+    { label: 'START', action: () => { location.href = 'levels/level1.html'; } },
     { label: 'SETTINGS', action: () => Game.switchTo('settings') },
   ];
 
