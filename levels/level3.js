@@ -1,0 +1,39 @@
+/* =============================================================
+ * level3.js — CRYSTAL MINES (mine)
+ * Vertical climb route + flyers guarding the pits.
+ * ============================================================= */
+LevelLoader.register({
+  name: 'CRYSTAL MINES',
+  theme: 'mine',
+  w: 1800, h: 270,
+  spawn: { x: 40, y: 200 },
+  exit: { x: 1760, y: 214 },
+  checkpoints: [{ x: 500, y: 230 }, { x: 1100, y: 230 }],
+  platforms: [
+    { x: 0,    y: 246, w: 700, h: 24 },
+    { x: 764,  y: 246, w: 436, h: 24 },
+    { x: 1264, y: 246, w: 536, h: 24 },
+    // climb up the left wall
+    { x: 150,  y: 210, w: 72, h: 10 },
+    { x: 280,  y: 175, w: 72, h: 10 },
+    { x: 410,  y: 140, w: 72, h: 10 },
+    { x: 540,  y: 105, w: 72, h: 10 },
+    { x: 700,  y: 140, w: 72, h: 10 },
+    // descend toward the exit
+    { x: 850,  y: 180, w: 72, h: 10 },
+    { x: 1000, y: 150, w: 72, h: 10 },
+    { x: 1150, y: 120, w: 72, h: 10 },
+    { x: 1300, y: 150, w: 72, h: 10 },
+    { x: 1500, y: 200, w: 72, h: 10 },
+  ],
+  enemies: [
+    { type: 'walker', x: 220,  y: 236 },
+    { type: 'walker', x: 900,  y: 236 },
+    { type: 'walker', x: 1600, y: 236 },
+    { type: 'flyer',  x: 350,  y: 85 },
+    { type: 'flyer',  x: 700,  y: 70 },
+    { type: 'flyer',  x: 1000, y: 85 },
+    { type: 'flyer',  x: 1400, y: 75 },
+    { type: 'turret', x: 1350, y: 234 },
+  ],
+});

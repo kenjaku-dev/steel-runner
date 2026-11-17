@@ -1,0 +1,38 @@
+/* =============================================================
+ * level2.js — DESERT OUTPOST (desert)
+ * Introduces turrets + the KEY/LOCKED DOOR mechanic.
+ * ============================================================= */
+LevelLoader.register({
+  name: 'DESERT OUTPOST',
+  theme: 'desert',
+  w: 1880, h: 270,
+  spawn: { x: 40, y: 200 },
+  exit: { x: 1840, y: 214 },
+  checkpoints: [{ x: 620, y: 230 }, { x: 1200, y: 230 }],
+  key: { x: 1306, y: 136 },
+  platforms: [
+    { x: 0,    y: 246, w: 500, h: 24 },
+    { x: 540,  y: 246, w: 360, h: 24 },
+    { x: 940,  y: 246, w: 460, h: 24 },
+    { x: 1440, y: 246, w: 440, h: 24 },
+    { x: 200,  y: 200, w: 72, h: 10 },
+    { x: 350,  y: 164, w: 72, h: 10 },
+    { x: 520,  y: 200, w: 72, h: 10 },
+    { x: 650,  y: 150, w: 72, h: 10 },
+    { x: 800,  y: 190, w: 72, h: 10 },
+    { x: 1000, y: 160, w: 72, h: 10 },
+    { x: 1150, y: 200, w: 72, h: 10 },
+    { x: 1290, y: 160, w: 72, h: 10 },
+    { x: 1500, y: 200, w: 72, h: 10 },
+    { x: 1650, y: 170, w: 72, h: 10 },
+  ],
+  enemies: [
+    { type: 'walker', x: 260,  y: 236 },
+    { type: 'walker', x: 620,  y: 236 },
+    { type: 'walker', x: 1000, y: 236 },
+    { type: 'walker', x: 1250, y: 236 },
+    { type: 'walker', x: 1600, y: 236 },
+    { type: 'turret', x: 850,  y: 234 },
+    { type: 'turret', x: 1450, y: 234 },
+  ],
+});
