@@ -3,9 +3,12 @@
  * Bullets die on solids, world bounds, or when their range runs out.
  * Melee weapons spawn a SLASH: a short-lived no-wall hitbox with an
  * animated sweep arc (the strike motion).
- * A bullet may carry grav (falls under gravity — enemy bombs) and a
- * bomb flag: on a solid hit it EXPLODES with an AoE blast that hurts
- * the player standing nearby (bomber drops, boss shockwaves).
+ * A bullet may carry grav (falls under gravity) and a bomb flag: on
+ * ANY impact it EXPLODES with an AoE blast, split by side — hostile
+ * bombs (bomber drops) hurt the nearby PLAYER, friendly grenades
+ * hurt nearby ENEMIES and the BOSS. A seek bullet is a HOMING
+ * missile that steers toward the nearest living target at `turn`
+ * rad/s (weapons/seeker.js).
  * ============================================================= */
 const Bullets = (() => {
   const list = [];
@@ -19,7 +22,7 @@ const Bullets = (() => {
       list.push({
         x, y,
         vx: Math.cos(a) * def.speed * facing,
-        vy: Math.sin(a) * def.speed,
+        vy: (def.vy0 ?? 0) + Math.sin(a) * def.speed,
         w: def.w, h: def.h,
         dmg: def.dmg,
         pierce: def.pierce ?? 0,
@@ -29,6 +32,8 @@ const Bullets = (() => {
         hostile: false,
         grav: def.grav ?? 0,
         bomb: def.bomb ?? false,
+        seek: def.seek ?? false,
+        turn: def.turn ?? 0,
         hit: new Set(), // enemies already damaged by this bullet
       });
     }
@@ -99,25 +104,68 @@ const Bullets = (() => {
     });
   }
 
-  // bomb ground blast: burst + shake + AoE hurt to a nearby player
+  // bomb blast: burst + shake + AoE hurt, split by side —
+  // hostile bombs (bomber drops) hurt the nearby PLAYER,
+  // friendly grenades hurt nearby ENEMIES and the BOSS.
   function explode(b, world) {
     Particles.burst(b.x, b.y, 16, '#ff9f45', {
       colors: ['#ff9f45', '#ffd23f', '#ffffff'], speed: 130, life: 0.6,
     });
     Sound.play('boom');
     Camera.shake(3, 0.25);
-    const p = world.player;
-    if (p && !p.dead) {
-      const dx = (p.x + p.w / 2) - b.x;
-      const dy = (p.y + p.h / 2) - b.y;
-      if (dx * dx + dy * dy < 40 * 40) p.hurt(b.dmg + 1, dx < 0 ? 1 : -1);
+    if (b.hostile) {
+      const p = world.player;
+      if (p && !p.dead) {
+        const dx = (p.x + p.w / 2) - b.x;
+        const dy = (p.y + p.h / 2) - b.y;
+        if (dx * dx + dy * dy < 40 * 40) p.hurt(b.dmg + 1, dx < 0 ? 1 : -1);
+      }
+      return;
     }
+    for (const e of world.enemies ?? []) {
+      if (e.hp <= 0) continue;
+      const dx = (e.x + e.w / 2) - b.x;
+      const dy = (e.y + e.h / 2) - b.y;
+      if (dx * dx + dy * dy < 44 * 44) Enemies.hurt(e, b.dmg);
+    }
+    const boss = world.boss;
+    if (boss && boss.hp > 0) {
+      const dx = (boss.x + boss.w / 2) - b.x;
+      const dy = (boss.y + boss.h / 2) - b.y;
+      if (dx * dx + dy * dy < 44 * 44) boss.hurt(b.dmg);
+    }
+  }
+
+  // homing missile steering: rotate the velocity toward the nearest
+  // living enemy / boss inside the sensor ring, at up to `turn` rad/s
+  function steer(b, world, dt) {
+    let target = null, best = 260 * 260; // sensor ring: 260px
+    const scan = (t) => {
+      const dx = (t.x + t.w / 2) - b.x, dy = (t.y + t.h / 2) - b.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < best) { best = d2; target = t; }
+    };
+    for (const e of world.enemies ?? []) if (e.hp > 0) scan(e);
+    const boss = world.boss;
+    if (boss && boss.hp > 0) scan(boss);
+    if (!target) return;
+    const ang = Math.atan2(b.vy, b.vx);
+    const want = Math.atan2((target.y + target.h / 2) - b.y,
+      (target.x + target.w / 2) - b.x);
+    let diff = want - ang;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    const a2 = ang + Math.sign(diff) * Math.min(Math.abs(diff), b.turn * dt);
+    const sp = Math.hypot(b.vx, b.vy);
+    b.vx = Math.cos(a2) * sp;
+    b.vy = Math.sin(a2) * sp;
   }
 
   function update(dt, world) {
     for (let i = list.length - 1; i >= 0; i--) {
       const b = list[i];
       if (b.grav) b.vy = Math.min(b.vy + b.grav * dt, 420); // gravity pull
+      if (b.seek) steer(b, world, dt); // homing missile steering
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       b.dist += Math.hypot(b.vx, b.vy) * dt;
@@ -144,6 +192,7 @@ const Bullets = (() => {
         for (const e of world.enemies) {
           if (e.hp <= 0 || b.hit.has(e.id)) continue;
           if (Physics.overlap(b, e)) {
+            if (b.bomb) { explode(b, world); dead = true; break; } // grenades pop on contact
             b.hit.add(e.id);
             Enemies.hurt(e, b.dmg);
             if (b.pierce > 0) b.pierce--;
@@ -154,10 +203,13 @@ const Bullets = (() => {
       // player bullets -> the boss (if this is a boss level)
       if (!dead && !b.hostile && world.boss && world.boss.hp > 0 && !b.hit.has(world.boss.id)) {
         if (Physics.overlap(b, world.boss)) {
-          b.hit.add(world.boss.id);
-          world.boss.hurt(b.dmg);
-          if (b.pierce > 0) b.pierce--;
-          else dead = true;
+          if (b.bomb) { explode(b, world); dead = true; } // grenades pop on the boss
+          else {
+            b.hit.add(world.boss.id);
+            world.boss.hurt(b.dmg);
+            if (b.pierce > 0) b.pierce--;
+            else dead = true;
+          }
         }
       }
       // enemy bullets -> player

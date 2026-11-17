@@ -13,7 +13,7 @@ No build tools, no dependencies. Open `index.html` in a browser and play.
 | Back | Escape |
 | Jump / double jump | Space, ArrowUp or W — tap again mid-air |
 | Fire | X or F (hold = autofire) |
-| Switch weapon | 1 / 2 / 3 / 4 or Q / E to cycle |
+| Switch weapon | 1–6 or Q / E to cycle |
 | Game over | Enter = retry from checkpoint, Esc = menu |
 
 ## Pages (open any of them — no server needed)
@@ -53,15 +53,23 @@ systems/
   fx.js               post effects: scanlines, vignette, hit pulse, flashes
   physics.js          AABB move & collide (axis-separated)
   camera.js           smooth follow camera clamped to world
-  weapons.js          data-driven weapon definitions (add weapon = add object)
   hud.js              canvas HUD + DOM weapon strip BELOW the canvas
   particles.js        bursts, landing dust, impact sparks (pure juice)
   sound.js            synth SFX + ONE COMPOSED SONG PER LEVEL (no files)
 entities/
-  bullets.js          one bullet system for all weapons + gravity bombs (AoE blasts)
+  bullets.js          one bullet system for all weapons + gravity bombs + homing missiles (AoE blasts split by side)
   enemies.js          walker / flyer / turret / hopper / bomber / charger
   player.js           player physics + pixel sprite + firing + health
   boss.js             TWO bosses (kind 1/2): 3 phases each, resets on player death
+weapons/              every weapon = its own file (add weapon = add file)
+  defs.js             the shared def bag + full field reference
+  pistol.js           starter sidearm (fast, unlimited reach)
+  shotgun.js          5-pellet close-range burst
+  laser.js            slow piercing beam
+  sword.js            melee slash arc (hits everything in reach)
+  grenade.js          lobbed AoE bomb (detonates on any impact)
+  seeker.js           homing missile (steers to the nearest target)
+  registry.js         builds the Weapons API (number keys + HUD extend automatically)
 levels/                every level = ONE self-contained html page
   level.loader.js     registry + progression + themes + saved CONTINUE progress
   level1.html         FIRST STEPS (grass) — data + game in one file
@@ -98,6 +106,7 @@ tests/
 11. [x] Graphics overhaul: parallax backdrops, post effects, richer sprites
 12. [x] Audio overhaul: one composed song per level + DOM weapon strip
 13. [x] Worlds 6–10: five themed levels + songs, 3 new enemies (hopper / bomber / charger), boss 2 (VOLT WRAITH), health pickups, CONTINUE in the menu
+14. [x] v0.8: `weapons/` folder (one file per weapon) + GRENADE + SEEKER homing missile; boss 1 rebalanced to be beatable
 
 ## Balance (v1.1 — "beatable" patch)
 - Player: normal HP 5→6, hard 3→4; hit grace 1.0s→1.2s; softer knockback (no more pit launches)
@@ -138,6 +147,13 @@ tests/
 - **Master compressor**: music and SFX mix through one DynamicsCompressor, so peaks glue instead of clipping
 - **DOM weapon strip**: the weapon slots moved OUT of the game canvas into a real `#weaponbar` element below it (`boot.js` styles it, `hud.js` syncs it — rebuilds only when the weapon list changes, highlights only on change; the canvas auto-rescales so the strip never overlaps the game)
 
+## Weapons folder & boss 1 rebalance (v0.8)
+- **`weapons/` folder — one file per weapon**: `defs.js` is the shared bag, each weapon file pushes ONE def (unique `key` + stats), `registry.js` builds the `Weapons` API the engine reads — number keys 1/2/3... and the HUD strip extend automatically. Add a weapon = add ONE small file + ONE line in `boot.js`
+- **GRENADE (key 5)**: lobbed bomb — arcs over cover (`vy0` -190 + `grav` 480), detonates on ANY impact (ground, enemy, boss) with an AoE blast (44px) that hurts enemies AND bosses; the thrower is safe. Thunk launch sound
+- **SEEKER (key 6)**: homing missile — steers toward the nearest living enemy/boss inside a 260px sensor ring at 5.5 rad/s (`seek` + `turn` in `bullets.js steer()`), so firing "the wrong way" still connects. Rising-chirp launch sound
+- **Blasts are side-aware** (`bullets.js explode()`): hostile bombs (bomber drops) hurt the nearby PLAYER as before, friendly grenades hurt nearby ENEMIES + the BOSS; bombs now also pop on enemy/boss contact, not just walls
+- **Boss 1 — MECHA GUARDIAN rebalanced** (was overtuned): hp 60→45 (notches 30/15), hover raised 70→125 so ground double-jump shots connect, gentler strafing (40→30 px/s, rage 70→55), softer pellet fans (phase 2: 5→4 pellets, spread 0.24→0.20, speed 130→115, every 1.8s→2.2s; rage: 7→5 pellets, 0.30→0.24, every 1.1s→1.5s), shockwaves slowed 150→125 with a longer slam cycle (2.4s→2.8s). Boss 2 (VOLT WRAITH) unchanged — already fair
+
 ## Worlds 6–10 & new threats (v0.7)
 - **Five new themed levels** (each with its own backdrop scene, palette and song):
   - `jungle` CANOPY OUTPOST — teaches the HOPPER on wide safe ground
@@ -155,19 +171,19 @@ tests/
 - **Older levels improved**: levels 1–5 gained path pickups; the boss-1 arena got hearts before the fight; the hub's `?level=` deep link now covers 1–10; boss-1's victory line points to the new worlds
 
 ## Git
-The repo tags mark playable milestones (`v0.1.0` → `v0.7.0`):
+The repo tags mark playable milestones (`v0.1.0` → `v0.8.0`):
 
 ```bash
 git status                    # what changed
 git add -A && git commit -m "what you changed"   # save a checkpoint
 git log --oneline             # history
-git checkout v0.7.0           # play an old version
+git checkout v0.8.0           # play an old version
 git checkout main             # back to latest
 ```
 
 ## How to extend
 - **New game file:** add ONE line to `boot.js` `SCRIPTS` — every page loads it automatically.
 - **New level:** copy `levels/level10.html` to `levels/level11.html`, change the `<title>` and the data block (`window.__START_LEVEL = 11`, `LevelLoader.solo(10, {...})` with your level data) — that's the whole level, nothing else to wire. The door auto-navigates to `level12.html`, and slots 4, 9, 14... are auto-flagged as boss levels (a boss-level door ends in the victory overlay instead). Add the theme to `LevelLoader.THEMES`, `Backdrop.THEMES` and a `SONGS` entry.
-- **New weapon:** add one object in `systems/weapons.js` — number keys extend automatically.
+- **New weapon:** copy `weapons/grenade.js` to `weapons/mygun.js`, push your def (unique `key`), and add the file to `boot.js` `SCRIPTS` before `weapons/registry.js` — number keys and the HUD strip extend automatically.
 - **New screen:** create `screens/screen.X.js` with `{enter, update, draw}` and register it in `main.js` + `boot.js`.
 - **Tweak game feel:** edit `config/game.config.js` only.

@@ -268,6 +268,41 @@ pump(15); // the strike motion (0.14s) must end
 assert.strictEqual(Bullets.count(), 0, 'slash hitbox lingered');
 Bullets.clear();
 
+// grenade (key 5): lobbed, falls under gravity, the blast kills nearby
+p.x = 560; p.y = 230; p.vx = 0; p.vy = 0; // clear corridor over the level's pit
+key('5'); pump(9); // swap + residual autofire cooldown must elapse
+assert.strictEqual(p.weapon, 4, 'did not switch to grenade');
+Enemies.spawnAll([{ type: 'walker', x: p.x + 90, y: 236 }]);
+p.facing = 1;
+key('x'); pump(1);
+const g = Bullets.first();
+assert.ok(g, 'grenade did not fire');
+assert.ok(g.grav > 0, 'grenade carries no gravity');
+assert.ok(g.bomb, 'grenade is not flagged as a bomb');
+assert.ok(g.vy < 0, 'grenade did not lob upward');
+pump(90); // ~1.5s: lob, fall, detonate — the blast sweeps the walker
+assert.strictEqual(Enemies.count(), 0, 'grenade blast did not kill the walker');
+assert.strictEqual(Bullets.count(), 0, 'grenade did not explode');
+Bullets.clear();
+
+// seeker (key 6): fired AWAY from a flyer behind + above, it steers back
+key('6'); pump(9);
+assert.strictEqual(p.weapon, 5, 'did not switch to seeker');
+Enemies.spawnAll([{ type: 'flyer', x: p.x - 60, y: 90 }]);
+Enemies.list()[0].hp = 1; // one homing hit must finish it
+p.facing = 1;
+key('x'); pump(1);
+const sk = Bullets.first();
+assert.ok(sk && sk.seek, 'seeker did not fire with homing');
+let turned = false;
+for (let i = 0; i < 240 && Enemies.count() > 0; i++) {
+  pump(1);
+  if (Bullets.count() > 0 && Bullets.list()[0].vx < 0) turned = true;
+}
+assert.ok(turned, 'seeker never steered back toward the target');
+assert.strictEqual(Enemies.count(), 0, 'seeker did not kill the enemy it homed onto');
+Bullets.clear();
+
 /* ---------- step 4: enemies ---------- */
 // explicit spawns (independent of level content); world.enemies stays
 // the same array because spawnAll mutates it in place
@@ -433,15 +468,16 @@ gotoPage(5);
 assert.strictEqual(globalThis.__game.levelIndex, 4, 'not on the boss page');
 const boss = globalThis.__game.world.boss;
 assert.ok(boss, 'boss not created');
-assert.strictEqual(boss.hp, 60, 'boss should start at 60 hp');
+assert.strictEqual(boss.hp, 45, 'boss should start at 45 hp');
+assert.deepStrictEqual(boss.notches, [30, 15], 'guardian notches wrong');
 const bp = globalThis.__game.player; // fresh player object after re-enter
 
 // phase 1: grounded — slam shockwaves must fire (jumpable waves)
 pump(150);
 assert.ok(Bullets.countHostile() >= 1, 'boss phase 1 produced no shockwaves');
 
-// phase 2 at hp <= 40: takes off and hovers
-boss.hurt(21);                    // 60 - 21 = 39 -> phase 2
+// phase 2 at hp <= 30: takes off and hovers high (double-jump shots connect)
+boss.hurt(16);                    // 45 - 16 = 29 -> phase 2
 pump(60);
 assert.strictEqual(boss.phase, 2, 'boss did not enter phase 2');
 assert.ok(boss.y < 150, 'boss did not take off in phase 2, y=' + boss.y);
@@ -450,11 +486,11 @@ assert.ok(boss.y < 150, 'boss did not take off in phase 2, y=' + boss.y);
 pump(130);
 assert.ok(Bullets.countHostile() >= 1, 'boss phase 2 produced no spread shots');
 
-// phase 3 (rage) at hp <= 20
-boss.hurt(20);                    // 39 - 20 = 19 -> phase 3
+// phase 3 (rage) at hp <= 15
+boss.hurt(15);                    // 29 - 15 = 14 -> phase 3
 pump(1);
 assert.strictEqual(boss.phase, 3, 'boss did not enter phase 3');
-boss.hurt(10);
+boss.hurt(5);
 assert.strictEqual(boss.hp, 9, 'boss hp math off');
 
 // player death -> game over -> RETRY -> boss resets (fair retry)
@@ -466,13 +502,13 @@ assert.strictEqual(last, 'gameover', 'death did not open game over');
 key('Enter'); pump(2);            // RETRY
 assert.strictEqual(last, 'game', 'RETRY did not return to game');
 pump(1);                          // boss notices the deaths change on its tick
-assert.strictEqual(boss.hp, 60, 'boss did not reset after player death');
+assert.strictEqual(boss.hp, 45, 'boss did not reset after player death');
 assert.strictEqual(bp.dead, false, 'player still dead after retry');
 assert.strictEqual(bp.hp, bp.maxHp, 'player hp not restored');
 assert.strictEqual(Bullets.count(), 0, 'bullets not cleared on death');
 
 // final blow -> door unlocks -> victory -> hub page
-boss.hurt(60);
+boss.hurt(45);
 pump(2);
 assert.ok(boss.hp <= 0, 'boss did not die');
 bp.x = 892; bp.y = 230; bp.vx = 0; bp.vy = 0;   // boss door at x 900

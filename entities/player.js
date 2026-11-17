@@ -198,7 +198,7 @@ const Player = (() => {
 
       fire() {
         const def = Weapons.get(this.weapon);
-        Sound.play(Weapons.order[this.weapon]); // pistol | shotgun | laser | sword
+        Sound.play(Weapons.order[this.weapon]); // one fx per weapon key
         this.cooldown = def.fireRate;
         if (def.melee) {
           // sword: animated slash hitbox — no projectile, no recoil

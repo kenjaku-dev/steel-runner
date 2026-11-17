@@ -93,6 +93,8 @@ const Sound = (() => {
     shotgun: (dst) => { noise(dst, t(), 0.14, 0.3, 0.7); tone(dst, t(), 220, 60, 0.12, 'square', 0.25); },
     laser: (dst) => tone(dst, t(), 1400, 180, 0.13, 'sawtooth', 0.22),
     sword: (dst) => { noise(dst, t(), 0.08, 0.22, 2.2); tone(dst, t(), 900, 280, 0.1, 'sawtooth', 0.15); },
+    grenade: (dst) => { noise(dst, t(), 0.06, 0.18, 0.6); tone(dst, t(), 170, 70, 0.12, 'square', 0.2); },
+    seeker: (dst) => tone(dst, t(), 620, 1250, 0.09, 'triangle', 0.14),
     jump: (dst) => tone(dst, t(), 250, 540, 0.09, 'square', 0.18),
     jump2: (dst) => tone(dst, t(), 420, 900, 0.1, 'square', 0.16),
     hurt: (dst) => tone(dst, t(), 320, 80, 0.18, 'square', 0.3),

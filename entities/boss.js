@@ -1,6 +1,6 @@
 /* =============================================================
  * boss.js — the BOSS system, two bosses (kind selects):
- *   kind 1 — MECHA GUARDIAN  (level 5,  hp 60, notches 40/20)
+ *   kind 1 — MECHA GUARDIAN  (level 5,  hp 45, notches 30/15)
  *     Phase 1 (hp > 40): ground approach + slam shockwaves (jump them)
  *     Phase 2 (hp > 20): takes off, hovers, aimed spread shots
  *     Phase 3 (rage):    faster, wider spread, waves return
@@ -20,15 +20,15 @@ const Boss = (() => {
       x: spawn.x, y: spawn.y,
       w: two ? 40 : 48, h: 44,
       vx: 0, vy: 0,
-      hp: two ? 80 : 60, maxHp: two ? 80 : 60, dmg: 2,
+      hp: two ? 80 : 45, maxHp: two ? 80 : 45, dmg: 2,
       phase: 1, lastPhase: 1, state: two ? 'hover' : 'walk', stateT: 0,
       dir: -1, t: 0, hitFlash: 0,
       slamTimer: 1.2, shootTimer: two ? 1.6 : 1.0, diveTimer: 2.0,
-      hoverBase: two ? 72 : 70,
+      hoverBase: two ? 72 : 125, // high hover: ground double-jump shots connect
       // HUD + victory overlay read these (hud.js / screen.game.js)
       name: two ? 'VOLT WRAITH' : 'MECHA GUARDIAN',
       short: two ? 'WRAITH' : 'GUARDIAN',
-      notches: two ? [52, 26] : [40, 20],
+      notches: two ? [52, 26] : [30, 15],
       victoryLine: two
         ? 'THE CORE COLLAPSES — STEEL RUNNER CONQUERED'
         : 'THE GATE IS OPEN — THE JUNGLE AWAITS',
@@ -53,11 +53,12 @@ const Boss = (() => {
     };
   }
 
-  // ground shockwave: jump over it
-  function wave(b, dir, color) {
+  // ground shockwave: jump over it (guardian waves run slower so a
+  // double jump clears them; the wraith dive keeps its original pace)
+  function wave(b, dir, color, speed = 125) {
     Bullets.spawnRaw({
       x: b.x + b.w / 2 - 7, y: 234,
-      vx: dir * 150, w: 14, h: 12, dmg: 2,
+      vx: dir * speed, w: 14, h: 12, dmg: 2,
       hostile: true, range: 430, color: color ?? CONFIG.COLORS.danger,
     });
   }
@@ -65,15 +66,15 @@ const Boss = (() => {
   // aimed pellet fan (guardian)
   function spread(b, p) {
     const rage = b.phase === 3;
-    const n = rage ? 7 : 5;
-    const step = rage ? 0.30 : 0.24;
+    const n = rage ? 5 : 4;
+    const step = rage ? 0.24 : 0.20;
     const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
     const base = Math.atan2(p.y + p.h / 2 - cy, p.x + p.w / 2 - cx);
     for (let i = 0; i < n; i++) {
       const a = base + (i - (n - 1) / 2) * step;
       Bullets.spawnRaw({
         x: cx, y: cy,
-        vx: Math.cos(a) * 130, vy: Math.sin(a) * 130,
+        vx: Math.cos(a) * 115, vy: Math.sin(a) * 115,
         w: 4, h: 4, dmg: 1, hostile: true, range: 400,
         color: rage ? CONFIG.COLORS.danger : '#ff9f45',
       });
@@ -128,7 +129,7 @@ const Boss = (() => {
   function updateGuardian(dt, world, b) {
     const p = world.player;
 
-    b.phase = b.hp <= 20 ? 3 : (b.hp <= 40 ? 2 : 1);
+    b.phase = b.hp <= 15 ? 3 : (b.hp <= 30 ? 2 : 1);
     if (b.phase !== b.lastPhase) {
       b.lastPhase = b.phase;
       b.state = 'walk';
@@ -152,18 +153,18 @@ const Boss = (() => {
           Sound.play('slam');
           Camera.shake(3, 0.25);
           b.state = 'walk';
-          b.slamTimer = 2.4;
+          b.slamTimer = 2.8;
         }
       }
     } else {
       // hover phases 2-3
       const rage = b.phase === 3;
       b.y += (b.hoverBase + Math.sin(b.t * 2) * 10 - b.y) * Math.min(1, dt * 3);
-      b.x = Math.max(10, Math.min(b.x + b.dir * (rage ? 70 : 40) * dt, world.w - b.w - 10));
+      b.x = Math.max(10, Math.min(b.x + b.dir * (rage ? 55 : 30) * dt, world.w - b.w - 10));
 
       b.shootTimer -= dt;
       if (b.shootTimer <= 0) {
-        b.shootTimer = rage ? 1.1 : 1.8;
+        b.shootTimer = rage ? 1.5 : 2.2;
         spread(b, p);
       }
       if (rage) {
@@ -179,7 +180,7 @@ const Boss = (() => {
     }
 
     // damaged: leak rising smoke
-    if (b.hp <= 20) {
+    if (b.hp <= 15) { // rage phase: the hull leaks smoke
       b.smokeT = (b.smokeT ?? 0) - dt;
       if (b.smokeT <= 0) {
         b.smokeT = 0.18;
@@ -239,8 +240,8 @@ const Boss = (() => {
         if (b.y + b.h >= 246) {
           // ground impact: shockwaves both ways
           b.y = GROUND_Y;
-          wave(b, -1, '#8ff0f6');
-          wave(b, 1, '#8ff0f6');
+          wave(b, -1, '#8ff0f6', 150);
+          wave(b, 1, '#8ff0f6', 150);
           Sound.play('slam');
           Camera.shake(4, 0.3);
           b.state = 'hover';
