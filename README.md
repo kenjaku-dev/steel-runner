@@ -48,6 +48,8 @@ config/
 systems/
   input.js            keyboard state + edge detection
   render.js           pixel canvas init, integer scaling, draw helpers
+  backdrop.js         parallax backdrops: one scene per level theme
+  fx.js               post effects: scanlines, vignette, hit pulse, flashes
   physics.js          AABB move & collide (axis-separated)
   camera.js           smooth follow camera clamped to world
   weapons.js          data-driven weapon definitions (add weapon = add object)
@@ -67,7 +69,7 @@ levels/                every level = ONE self-contained html page
   level4.html         IRON FACTORY (gauntlet)
   level5.html         GUARDIAN GATE (boss arena)
 screens/              every screen = own file, interface {enter,update,draw}
-  screen.menu.js      main menu (START -> levels/level1.html)
+  screen.menu.js      main menu (night scene, START -> levels/level1.html)
   screen.settings.js  settings screen
   screen.game.js      game screen: one level per page, doors navigate
   screen.pause.js     pause overlay (resume / restart level / quit)
@@ -87,6 +89,7 @@ tests/
 8. [x] Polish: particles, sound, jump feel, difficulty balance
 9. [x] Self-contained level pages: levels/levelN.html = data + game in one file
 10. [x] Double jump + SWORD melee weapon (animated strike arc)
+11. [x] Graphics overhaul: parallax backdrops, post effects, richer sprites
 
 ## Balance (v1.1 — "beatable" patch)
 - Player: normal HP 5→6, hard 3→4; hit grace 1.0s→1.2s; softer knockback (no more pit launches)
@@ -106,14 +109,23 @@ tests/
 - SWORD (key 4): melee weapon — an animated slash arc sweeps in front of the player (the strike motion), hits EVERY enemy in reach, no projectile, no recoil; dmg 2 every 0.34s
 - Weapons stay data-driven: a new weapon object in `systems/weapons.js` extends the 1/2/3/4... keys and the HUD bar automatically
 
+## Graphics (v0.5)
+- **Parallax backdrops** (`systems/backdrop.js`): every theme got a layered scene — grass (night sky, clouds, three hill layers), desert (low sun, mesas), mine (stalactites, rock walls, twinkling crystals), factory (smoking stacks with beacons, girders), boss (colossal gate pillars, pulsing runes, lightning storm). All deterministic (no flicker) + drifting theme motes per world
+- **Post effects** (`systems/fx.js`): subtle CRT scanlines + cached radial vignette over every screen, a red damage pulse on the edges when the player is hit, and a white flash on deaths, boss kills and page transitions
+- **Richer sprites**: two-tone shading + visor glint + waving red scarf (player); legs/antenna/glowing eyes (walker), flapping wings/engine trail (flyer), charging core + aiming barrel (turret); the boss got rolling tread notches, panel seams, phase-3 warning strobes, a pulsing core halo, muzzle glow and rising smoke when damaged
+- **Juicier bullets**: glow underlay + white hot core; bigger muzzle flashes; the sword slash got a wide glow trail and a tip spark
+- **World detail**: textured ground (speckles, under-shadow), riveted platforms, waving checkpoint flags with light beacons, a pixel-art key with glow halo, and the exit door became a shimmering portal (red seal bars while locked, light spill on the floor when open)
+- **New HUD**: pixel-art bitmap hearts, a slotted weapon panel with color-coded icons (auto-extends with new weapons), boss bar with phase notches and a top glint, drop shadows on every text
+- **Menu & settings**: the menu got a night scene (gradient sky, moon with craters, two star layers, drifting hills) and an item panel
+
 ## Git
-The repo tags mark playable milestones (`v0.1.0` → `v0.4.0`):
+The repo tags mark playable milestones (`v0.1.0` → `v0.5.0`):
 
 ```bash
 git status                    # what changed
 git add -A && git commit -m "what you changed"   # save a checkpoint
 git log --oneline             # history
-git checkout v0.4.0           # play an old version
+git checkout v0.5.0           # play an old version
 git checkout main             # back to latest
 ```
 

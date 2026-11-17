@@ -28,12 +28,13 @@ const Boss = (() => {
         this.hitFlash = 0.12;
         Sound.play('bossHit');
         if (this.hp <= 0) {
-          // death explosion: burst + boom + shake
+          // death explosion: burst + boom + shake + white flash
           Particles.burst(this.x + this.w / 2, this.y + this.h / 2, 24,
             CONFIG.COLORS.primary,
             { colors: [CONFIG.COLORS.primary, CONFIG.COLORS.danger, '#ffffff'], speed: 140, life: 0.8 });
           Sound.play('bossDie');
           Camera.shake(5, 0.5);
+          Fx.flash(0.4);
         }
       },
     };
@@ -136,6 +137,16 @@ const Boss = (() => {
       }
     }
 
+    // damaged: leak rising smoke
+    if (b.hp <= 20) {
+      b.smokeT = (b.smokeT ?? 0) - dt;
+      if (b.smokeT <= 0) {
+        b.smokeT = 0.18;
+        Particles.spawn(b.x + 8 + Math.random() * (b.w - 16), b.y + 6,
+          (Math.random() - 0.5) * 8, -18, 0.7, '#5a5a6a', 2, -12);
+      }
+    }
+
     // contact damage
     if (Physics.overlap(b, p)) p.hurt(b.dmg, b.dir);
   }
@@ -144,35 +155,66 @@ const Boss = (() => {
     if (!b || b.hp <= 0) return;
     const x = Math.round(b.x), y = Math.round(b.y);
     const flash = b.hitFlash > 0;
-    const steel = flash ? '#ffffff' : '#3a3a4c';
-    const dark = flash ? '#ffffff' : '#20202e';
+    const steel = flash ? '#ffffff' : '#3f3f54';
+    const steelHi = flash ? '#ffffff' : '#565672';
+    const dark = flash ? '#ffffff' : '#232332';
     const core = b.phase === 1 ? CONFIG.COLORS.secondary
       : b.phase === 2 ? '#ff9f45' : CONFIG.COLORS.danger;
 
-    // treads
+    // treads with rolling notches
     ctx.fillStyle = dark;
     ctx.fillRect(x, y + b.h - 10, b.w, 10);
+    ctx.fillStyle = '#15151f';
+    const roll = Math.floor(b.t * 10) % 8;
+    for (let tx = x - roll; tx < x + b.w; tx += 8) {
+      if (tx >= x && tx <= x + b.w - 2) ctx.fillRect(tx, y + b.h - 6, 3, 3);
+    }
+    ctx.fillStyle = dark;
     ctx.fillRect(x + 5, y + b.h - 5, 8, 5);
     ctx.fillRect(x + b.w - 13, y + b.h - 5, 8, 5);
-    // body
+    // body + top highlight + panel seam
     ctx.fillStyle = steel;
     ctx.fillRect(x + 2, y + 4, b.w - 4, b.h - 14);
-    // shoulders
+    ctx.fillStyle = steelHi;
+    ctx.fillRect(x + 2, y + 4, b.w - 4, 2);
+    ctx.fillStyle = dark;
+    ctx.fillRect(x + 2, y + 21, b.w - 4, 1);
+    // shoulders (capped) + phase-3 warning strobes
     ctx.fillStyle = dark;
     ctx.fillRect(x - 2, y + 4, 6, 12);
     ctx.fillRect(x + b.w - 4, y + 4, 6, 12);
-    // visor (blinks white as the slam telegraph)
+    ctx.fillStyle = steel;
+    ctx.fillRect(x - 2, y + 4, 6, 3);
+    ctx.fillRect(x + b.w - 4, y + 4, 6, 3);
+    if (b.phase === 3 && Math.floor(b.t * 6) % 2 === 0) {
+      ctx.fillStyle = CONFIG.COLORS.danger;
+      ctx.fillRect(x - 1, y + 8, 3, 3);
+      ctx.fillRect(x + b.w - 3, y + 8, 3, 3);
+    }
+    // visor (blinks white as the slam telegraph) + top glint
     const tele = b.state === 'windup' && Math.floor(b.t * 14) % 2 === 0;
     ctx.fillStyle = tele ? '#ffffff' : core;
     ctx.fillRect(x + 10, y + 10, b.w - 20, 8);
-    // chest core (pulses in rage)
-    const pulse = b.phase === 3 && Math.floor(b.t * 10) % 2 === 0 ? 2 : 0;
+    ctx.fillStyle = tele ? '#ffffff' : 'rgba(255,255,255,0.35)';
+    ctx.fillRect(x + 10, y + 10, b.w - 20, 2);
+    // chest core: pulsing halo + white hot center
+    const pulse = (Math.sin(b.t * 5) * 0.5 + 0.5) * (b.phase === 3 ? 3 : 1.5);
+    ctx.globalAlpha = 0.25;
     ctx.fillStyle = core;
-    ctx.fillRect(x + b.w / 2 - 4 - pulse, y + 24 - pulse, 8 + pulse * 2, 8 + pulse * 2);
-    // cannon toward the player
+    ctx.fillRect(Math.round(x + b.w / 2 - 7 - pulse), Math.round(y + 21 - pulse),
+      Math.round(14 + pulse * 2), Math.round(14 + pulse * 2));
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = core;
+    ctx.fillRect(x + b.w / 2 - 4, y + 24, 8, 8);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + b.w / 2 - 2, y + 25, 3, 3);
+    // cannon toward the player + muzzle glow
     ctx.fillStyle = dark;
     if (b.dir > 0) ctx.fillRect(x + b.w, y + 18, 9, 6);
     else ctx.fillRect(x - 9, y + 18, 9, 6);
+    ctx.fillStyle = core;
+    if (b.dir > 0) ctx.fillRect(x + b.w + 6, y + 19, 3, 4);
+    else ctx.fillRect(x - 9, y + 19, 3, 4);
   }
 
   return { create, update, draw };

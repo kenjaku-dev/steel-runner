@@ -71,6 +71,7 @@ const ScreenSettings = (() => {
       size: CONFIG.UI.sizeTitle,
       color: CONFIG.COLORS.primary,
       align: 'center',
+      shadow: true,
     });
 
     // panel behind the rows
@@ -118,7 +119,10 @@ const ScreenSettings = (() => {
       size: CONFIG.UI.sizeSmall,
       color: CONFIG.COLORS.textDim,
       align: 'center',
+      shadow: true,
     });
+
+    Fx.draw(); // scanlines + vignette over the panel too
   }
 
   return { enter, update, draw };

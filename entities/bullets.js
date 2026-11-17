@@ -158,32 +158,59 @@ const Bullets = (() => {
     ctx.save();
     ctx.translate(Math.round(b.cx), Math.round(b.cy));
     ctx.scale(b.facing, 1);            // mirror for left-facing swings
+    // wide faint glow behind the trail
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(0, 0, b.reach, a0, tip);
+    ctx.stroke();
+    // main trail
     ctx.globalAlpha = 0.25 + 0.65 * (1 - prog); // trail fades as it ends
     ctx.strokeStyle = b.color;
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(0, 0, b.reach, a0, tip);
     ctx.stroke();
-    // hot white leading edge at the sweep tip
+    // hot white leading edge + tip spark
     ctx.globalAlpha = 0.9;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, b.reach, Math.max(a0, tip - 0.3), tip);
     ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.9;
+    ctx.fillRect(Math.round(Math.cos(tip) * b.reach) - 1, Math.round(Math.sin(tip) * b.reach) - 1, 2, 2);
     ctx.restore();
   }
 
   function draw(ctx) {
     for (const b of list) {
       if (b.kind === 'slash') { drawSlash(ctx, b); continue; }
+      const x = Math.round(b.x), y = Math.round(b.y);
+      // soft glow underlay + body + hot white core
+      ctx.globalAlpha = 0.35;
       ctx.fillStyle = b.color;
-      ctx.fillRect(Math.round(b.x), Math.round(b.y), b.w, b.h);
+      ctx.fillRect(x - 1, y - 1, b.w + 2, b.h + 2);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(x, y, b.w, b.h);
+      if (b.w >= 4) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x + 1, y, b.w - 2, 1);
+      }
     }
     for (const f of flashes) {
+      const x = Math.round(f.x), y = Math.round(f.y);
+      const s = f.t > 0.03 ? 5 : 3;
+      ctx.globalAlpha = 0.4;
       ctx.fillStyle = f.color;
-      const s = f.t > 0.03 ? 4 : 2;
-      ctx.fillRect(Math.round(f.x) - (s >> 1), Math.round(f.y) - (s >> 1), s, s);
+      ctx.fillRect(x - s, y - s, s * 2, s * 2);
+      ctx.globalAlpha = 1;
+      const s2 = f.t > 0.03 ? 4 : 2;
+      ctx.fillStyle = f.color;
+      ctx.fillRect(x - (s2 >> 1), y - (s2 >> 1), s2, s2);
     }
   }
 

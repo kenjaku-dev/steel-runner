@@ -34,6 +34,11 @@ const Render = (() => {
     ctx.font = 'bold ' + size + 'px ' + CONFIG.UI.font;
     ctx.textAlign = opts.align ?? 'left';
     ctx.textBaseline = 'top';
+    if (opts.shadow) {
+      // 1px drop shadow: keeps text readable over busy backdrops
+      ctx.fillStyle = opts.shadowColor ?? 'rgba(0,0,0,0.65)';
+      ctx.fillText(str, Math.round(x) + 1, Math.round(y) + 1);
+    }
     ctx.fillStyle = opts.color ?? CONFIG.COLORS.text;
     ctx.fillText(str, Math.round(x), Math.round(y));
   }

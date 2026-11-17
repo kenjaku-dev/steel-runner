@@ -22,6 +22,7 @@ const ScreenGameOver = (() => {
   }
 
   function update(dt) {
+    Fx.update(dt); // death flash keeps fading behind the overlay
     if (Input.justPressed('ArrowUp', 'w')) sel = (sel + items.length - 1) % items.length;
     if (Input.justPressed('ArrowDown', 's')) sel = (sel + 1) % items.length;
     if (Input.cancel()) { items[1].action(); return; } // ESC = quit to menu

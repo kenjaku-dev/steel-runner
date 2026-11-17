@@ -123,39 +123,53 @@ const Enemies = (() => {
       const dark = e.hitFlash > 0 ? '#ffffff' : T.dark;
 
       if (e.type === 'walker') {
+        // scuttling legs (two-phase step) + shell lip
         const step = Math.floor(e.t * 8) % 2 === 0 ? 0 : -1;
         ctx.fillStyle = dark;
         ctx.fillRect(x, y + 2, e.w, e.h - 2);
         ctx.fillStyle = body;
-        ctx.fillRect(x + 1, y + 2, e.w - 2, e.h - 4);
+        ctx.fillRect(x + 1, y + 2, e.w - 2, e.h - 5);
         ctx.fillStyle = dark;
+        ctx.fillRect(x + 1, y + 2, e.w - 2, 1);
         ctx.fillRect(x + 2, y + e.h - 3, 2, 3);
         ctx.fillRect(x + e.w - 4, y + e.h - 3 + step, 2, 3);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(e.dir > 0 ? x + e.w - 3 : x + 1, y + 3, 2, 2);
+        // antenna + glowing eye facing the travel direction
+        ctx.fillRect(x + e.w / 2 - 1, y, 1, 2);
+        ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : CONFIG.COLORS.danger;
+        ctx.fillRect(x + e.w / 2 - 1, y - 1, 1, 1);
+        ctx.fillStyle = '#ffd23f';
+        ctx.fillRect(e.dir > 0 ? x + e.w - 3 : x + 1, y + 4, 2, 2);
       } else if (e.type === 'flyer') {
+        // flapping wings + hull + cockpit glow + engine trail
         const flap = Math.floor(e.t * 10) % 2 === 0 ? 0 : -2;
         ctx.fillStyle = dark;
-        ctx.fillRect(x - 2, y + 2 + flap, 3, 2);
-        ctx.fillRect(x + e.w - 1, y + 2 - flap, 3, 2);
-        ctx.fillRect(x, y + 1, e.w, e.h - 2);
+        ctx.fillRect(x - 3, y + 2 + flap, 4, 2);
+        ctx.fillRect(x + e.w - 1, y + 2 - flap, 4, 2);
+        ctx.fillRect(x, y + 1, e.w, e.h - 1);
         ctx.fillStyle = body;
         ctx.fillRect(x + 1, y + 2, e.w - 2, e.h - 4);
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#8ff0f6';
         ctx.fillRect(e.dir > 0 ? x + e.w - 4 : x + 2, y + 3, 2, 2);
+        ctx.fillStyle = 'rgba(143,240,246,0.4)';
+        ctx.fillRect(x + e.w / 2 - 2, y + e.h - 1 + flap, 4, 2);
       } else { // turret
+        // base plate + column + two-tone dome
         ctx.fillStyle = dark;
-        ctx.fillRect(x, y + 4, e.w, e.h - 4);
+        ctx.fillRect(x - 1, y + e.h - 2, e.w + 2, 2);
+        ctx.fillRect(x + 3, y + 6, e.w - 6, e.h - 8);
         ctx.fillStyle = body;
-        ctx.fillRect(x + 1, y + 5, e.w - 2, e.h - 6);
+        ctx.fillRect(x + 1, y + 4, e.w - 2, 3);
+        ctx.fillRect(x + 2, y + 3, e.w - 4, 1);
+        // barrel aiming at the player
         ctx.fillStyle = dark;
         if (e.dir > 0) ctx.fillRect(x + e.w - 2, y + 5, 4, 2);
         else ctx.fillRect(x - 2, y + 5, 4, 2);
-        // core blinks when about to fire
-        if (e.cooldown < 0.35 && Math.floor(e.t * 12) % 2 === 0) {
-          ctx.fillStyle = T.core;
-          ctx.fillRect(x + e.w / 2 - 1, y + e.h - 4, 2, 2);
-        }
+        // charging core: brightens as it gets ready to fire
+        const charge = Math.max(0, 1 - e.cooldown / T.fireRate);
+        ctx.globalAlpha = 0.5 + 0.5 * charge;
+        ctx.fillStyle = e.cooldown < 0.35 && Math.floor(e.t * 12) % 2 === 0 ? '#ffffff' : T.core;
+        ctx.fillRect(x + e.w / 2 - 2, y + e.h - 5, 4, 3);
+        ctx.globalAlpha = 1;
       }
     }
   }

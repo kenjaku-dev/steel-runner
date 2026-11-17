@@ -17,6 +17,7 @@ const ScreenPause = (() => {
   }
 
   function update(dt) {
+    Fx.update(dt); // leftover flashes keep fading behind the overlay
     if (Input.justPressed('ArrowUp', 'w')) sel = (sel + items.length - 1) % items.length;
     if (Input.justPressed('ArrowDown', 's')) sel = (sel + 1) % items.length;
     if (Input.cancel()) { items[0].action(); return; } // ESC = resume

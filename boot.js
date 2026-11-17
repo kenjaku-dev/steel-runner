@@ -24,6 +24,7 @@
   const SCRIPTS = [
     'config/game.config.js', 'config/settings.js',
     'systems/input.js', 'systems/render.js',
+    'systems/backdrop.js', 'systems/fx.js',
     'systems/physics.js', 'systems/camera.js',
     'systems/weapons.js', 'systems/hud.js',
     'systems/particles.js', 'systems/sound.js',

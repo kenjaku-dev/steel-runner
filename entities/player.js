@@ -4,14 +4,17 @@
  * Swap for PNG spritesheets later (assets/sprites/).
  * ============================================================= */
 const Player = (() => {
-  // Palette chars: O outline, H helmet, V visor, W white glint/gloves,
-  // B suit, L legs
+  // Palette chars: O outline, H helmet, M helmet shade, V visor,
+  // E visor glint, W white glint/gloves, B suit, D suit shade, L legs
   const PAL = {
     O: '#0e0e1c',
     H: CONFIG.COLORS.secondary,
+    M: '#2fa8b2',
     V: '#101024',
+    E: '#8ff0f6',
     W: '#e8f6ff',
     B: CONFIG.COLORS.primary,
+    D: '#c9931f',
     L: '#3a3a66',
   };
 
@@ -21,14 +24,14 @@ const Player = (() => {
       '............',
       '...OOOOOO...',
       '..OHHHHHHO..',
-      '..OHHHHHHO..',
+      '..OHMHHHHO..',
       '..OVVVVVVO..',
-      '..OVWVVWVO..',
+      '..OVGVEVVO..',
       '...OHHHHO...',
       '..OBBBBBBO..',
       '.OBWBBBBWBO.',
-      '.OBBBBBBBBO.',
-      '..OBBBBBBO..',
+      '.OBDBBBBDBO.',
+      '..ODBBBBDO..',
       '..OLL..LLO..',
       '..OLL..LLO..',
       '..OLL..LLO..',
@@ -39,14 +42,14 @@ const Player = (() => {
       '............',
       '...OOOOOO...',
       '..OHHHHHHO..',
-      '..OHHHHHHO..',
+      '..OHMHHHHO..',
       '..OVVVVVVO..',
-      '..OVWVVWVO..',
+      '..OVGVEVVO..',
       '...OHHHHO...',
       '..OBBBBBBO..',
       '.OBWBBBBWBO.',
-      '.OBBBBBBBBO.',
-      '..OBBBBBBO..',
+      '.OBDBBBBDBO.',
+      '..ODBBBBDO..',
       '..OLL..LLO..',
       '..OLL..LLO..',
       '.OLL....LLO.',
@@ -57,14 +60,14 @@ const Player = (() => {
       '............',
       '...OOOOOO...',
       '..OHHHHHHO..',
-      '..OHHHHHHO..',
+      '..OHMHHHHO..',
       '..OVVVVVVO..',
-      '..OVWVVWVO..',
+      '..OVGVEVVO..',
       '...OHHHHO...',
       '..OBBBBBBO..',
       '.OBWBBBBWBO.',
-      '.OBBBBBBBBO.',
-      '..OBBBBBBO..',
+      '.OBDBBBBDBO.',
+      '..ODBBBBDO..',
       '...OLLLO....',
       '...OLLLO....',
       '....OLLO....',
@@ -75,14 +78,14 @@ const Player = (() => {
       '............',
       '...OOOOOO...',
       '..OHHHHHHO..',
-      '..OHHHHHHO..',
+      '..OHMHHHHO..',
       '..OVVVVVVO..',
-      '..OVWVVWVO..',
+      '..OVGVEVVO..',
       '...OHHHHO...',
       '..OBBBBBBO..',
       '.OBWBBBBWBO.',
-      '.OBBBBBBBBO.',
-      '..OBBBBBBO..',
+      '.OBDBBBBDBO.',
+      '..ODBBBBDO..',
       '..OLL.LLO...',
       '..OLL.LLO...',
       '..OO...OO...',
@@ -218,6 +221,7 @@ const Player = (() => {
         this.vy = -40;
         Sound.play('hurt');
         Camera.shake(2, 0.2);
+        Fx.hit(); // red damage pulse on the screen edges
         if (this.hp <= 0) this.die();
       },
 
@@ -227,6 +231,7 @@ const Player = (() => {
         this.deaths++;
         Bullets.clear();
         Sound.play('playerDie');
+        Fx.flash(0.3); // short white-out on death
         // respawn is handled by the game-over screen (RETRY)
       },
 
@@ -262,6 +267,13 @@ const Player = (() => {
           ctx.translate(6, 16); ctx.scale(sx, sy); ctx.translate(-6, -16);
         }
         if (!blink) {
+          // scarf: red trail whipping behind, waves while moving
+          for (let i = 1; i <= 3; i++) {
+            const sway = Math.sin(this.animT * 9 + i * 1.3) * (0.7 + i * 0.3);
+            const back = i * 3 + Math.min(5, Math.abs(this.vx) * 0.03 * i);
+            ctx.fillStyle = i === 3 ? '#c23a3a' : CONFIG.COLORS.danger;
+            ctx.fillRect(Math.round(-back), Math.round(7 + sway), 3, 2);
+          }
           for (let r = 0; r < frame.length; r++) {
             const row = frame[r];
             for (let c = 0; c < row.length; c++) {

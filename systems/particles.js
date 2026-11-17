@@ -68,7 +68,7 @@ const Particles = (() => {
   }
 
   return {
-    burst, puff, spark, update, draw,
+    spawn, burst, puff, spark, update, draw,
     count: () => list.length,
     clear: () => { list.length = 0; },
   };

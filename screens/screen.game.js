@@ -23,6 +23,7 @@ const ScreenGame = (() => {
     Camera.reset();
     Bullets.clear();
     Particles.clear();
+    Fx.reset(); // fresh page: no leftover hit pulse / flash
     Sound.startMusic(LevelLoader.isBoss(levelIndex) ? 'boss' : 'game');
 
     world = {
@@ -51,6 +52,7 @@ const ScreenGame = (() => {
 
   const doorRect = () => ({ x: level.exit.x, y: level.exit.y, w: 16, h: 32 });
   const keyRect = () => ({ x: level.key.x, y: level.key.y, w: 8, h: 8 });
+  const hash01 = (n) => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); };
 
   function doorLocked() {
     if (LevelLoader.isBoss(levelIndex)) {
@@ -60,6 +62,7 @@ const ScreenGame = (() => {
   }
 
   function update(dt) {
+    Fx.update(dt); // post-effect timers (hit pulse / flashes decay)
     if (victory) {
       // boss beaten: Enter/Esc returns to the hub page
       if (Input.confirm() || Input.cancel()) location.href = '../index.html';
@@ -121,8 +124,10 @@ const ScreenGame = (() => {
         victory = true;              // boss page: victory -> hub
         Sound.stopMusic();
         Sound.play('victory');
+        Fx.flash(0.6);               // big moment: white-out
       } else {
         Sound.play('door');          // walk through into the next page
+        Fx.flash(0.35);              // white blink across the page cut
         location.href = 'level' + (levelIndex + 2) + '.html';
       }
       return;
@@ -141,6 +146,9 @@ const ScreenGame = (() => {
     const C = CONFIG.COLORS;
     Render.clear(T.bg);
 
+    // parallax backdrop (screen space, behind the world)
+    Backdrop.draw(level.theme, Camera.x, Camera.y, performance.now() / 1000);
+
     // ---- world (camera-transformed) ----
     Render.ctx.save();
     Camera.apply(Render.ctx);
@@ -155,30 +163,95 @@ const ScreenGame = (() => {
       Render.box(s.x, s.y, s.w, ground ? 3 : 2, {
         fill: ground ? T.groundTop : T.platTop,
       });
+      // 16-bit tile texture: under-shadow + deterministic speckles/rivets
+      const ctx = Render.ctx;
+      if (ground) {
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.fillRect(s.x, s.y + s.h - 3, s.w, 3);
+        const n = Math.floor(s.w / 26);
+        for (let k = 0; k < n; k++) {
+          const hx = s.x + 6 + Math.floor(hash01(s.x * 7 + k) * (s.w - 12));
+          const hy = s.y + 8 + Math.floor(hash01(s.x * 13 + k) * (s.h - 14));
+          ctx.fillRect(hx, hy, 2, 1);
+        }
+      } else {
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(s.x, s.y + s.h - 2, s.w, 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(s.x + 2, s.y + 1, 1, 1);
+        ctx.fillRect(s.x + s.w - 3, s.y + 1, 1, 1);
+      }
     }
 
     for (const cp of level.checkpoints ?? []) {
       const on = activated.has(cp);
-      Render.box(cp.x + 2, cp.y - 10, 3, 26, { fill: on ? C.success : '#3a3a46' });
-      Render.box(cp.x + 5, cp.y - 10, 9, 6, { fill: on ? C.primary : C.textDim });
+      const ctx = Render.ctx;
+      const wave = on ? Math.round(Math.sin(performance.now() / 160) * 1.5) : 0;
+      // light beacon column once claimed
+      if (on) {
+        ctx.fillStyle = 'rgba(93,220,122,0.10)';
+        ctx.fillRect(cp.x + 1, cp.y - 46, 10, 46);
+      }
+      // pole + waving flag
+      ctx.fillStyle = on ? C.success : '#3a3a46';
+      ctx.fillRect(cp.x + 2, cp.y - 12, 3, 28);
+      ctx.fillStyle = on ? C.primary : '#2a2a38';
+      ctx.fillRect(cp.x + 5, cp.y - 10 + wave, 8, 5);
+      ctx.fillRect(cp.x + 5, cp.y - 10 + wave, 2, 7);
+      if (on) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(cp.x + 6, cp.y - 9 + wave, 2, 2);
+      }
     }
 
     if (level.key && !hasKey) {
       const bob = Math.round(Math.sin(performance.now() / 250) * 2);
-      Render.box(level.key.x, level.key.y + bob, 8, 8, {
-        fill: C.primary, border: '#ffffff',
-      });
+      const kx = level.key.x, ky = level.key.y + bob;
+      const ctx = Render.ctx;
+      // golden glow halo + pixel key sprite (ring, shaft, teeth)
+      ctx.fillStyle = 'rgba(255,210,63,0.18)';
+      ctx.fillRect(kx - 3, ky - 3, 14, 14);
+      ctx.fillStyle = C.primary;
+      ctx.fillRect(kx, ky, 3, 3);
+      ctx.fillStyle = '#0f0f1b';
+      ctx.fillRect(kx + 1, ky + 1, 1, 1);
+      ctx.fillStyle = C.primary;
+      ctx.fillRect(kx + 3, ky + 1, 5, 1);
+      ctx.fillRect(kx + 6, ky + 2, 1, 2);
+      ctx.fillRect(kx + 7, ky + 2, 1, 3);
+      if (Math.floor(performance.now() / 300) % 4 === 0) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(kx + 1, ky - 1, 1, 1);
+      }
     }
 
+    // exit door: glowing portal (shimmer when open, sealed when locked)
     const locked = doorLocked();
     const d = doorRect();
+    const ctx = Render.ctx;
+    const tNow = performance.now();
+    if (!locked) {
+      ctx.fillStyle = 'rgba(93,220,122,' + (0.10 + 0.06 * Math.sin(tNow / 220)).toFixed(3) + ')';
+      ctx.fillRect(d.x - 4, d.y + d.h, d.w + 8, 4);
+    }
     Render.box(d.x, d.y, d.w, d.h, {
-      fill: locked ? '#341c2a' : '#1c3038',
+      fill: locked ? '#341c2a' : '#10222a',
       border: locked ? C.danger : C.success,
     });
-    Render.box(d.x + 5, d.y + 12, 6, 8, {
-      fill: locked ? C.danger : C.success,
-    });
+    if (locked) {
+      ctx.fillStyle = 'rgba(255,93,93,0.5)';
+      ctx.fillRect(d.x + 3, d.y + 8, d.w - 6, 3);
+      ctx.fillRect(d.x + 3, d.y + 16, d.w - 6, 3);
+      ctx.fillRect(d.x + 3, d.y + 24, d.w - 6, 3);
+    } else {
+      for (let r = 0; r < 4; r++) {
+        const yy = d.y + 4 + ((r * 9 + tNow / 45) % (d.h - 8));
+        ctx.fillStyle = 'rgba(93,220,122,' + (0.18 + 0.1 * Math.sin(tNow / 200 + r)).toFixed(3) + ')';
+        ctx.fillRect(d.x + 2, Math.round(yy), d.w - 4, 3);
+      }
+      ctx.fillStyle = C.success;
+      ctx.fillRect(d.x + 5, d.y + 12, 6, 8);
+    }
 
     player.draw(Render.ctx);
     Enemies.draw(Render.ctx);
@@ -189,6 +262,9 @@ const ScreenGame = (() => {
 
     // ---- HUD (screen space, own module) ----
     HUD.draw({ player, world, level, levelIndex, hasKey });
+
+    // post effects ABOVE everything (pause/gameover overlays inherit)
+    Fx.draw();
   }
 
   function draw() {
@@ -200,10 +276,10 @@ const ScreenGame = (() => {
     if (introT > 0) {
       Render.box(0, 0, Render.w, Render.h, { fill: 'rgba(6,6,12,0.6)' });
       Render.text('LEVEL ' + (levelIndex + 1), cx, 108, {
-        size: CONFIG.UI.sizeTitle, color: C.primary, align: 'center',
+        size: CONFIG.UI.sizeTitle, color: C.primary, align: 'center', shadow: true,
       });
       Render.text(level.name, cx, 146, {
-        size: CONFIG.UI.sizeItem, color: C.text, align: 'center',
+        size: CONFIG.UI.sizeItem, color: C.text, align: 'center', shadow: true,
       });
     }
 
@@ -211,13 +287,13 @@ const ScreenGame = (() => {
     if (victory) {
       Render.box(0, 0, Render.w, Render.h, { fill: 'rgba(6,6,12,0.72)' });
       Render.text('YOU BEAT THE GUARDIAN!', cx, 100, {
-        size: CONFIG.UI.sizeTitle, color: C.primary, align: 'center',
+        size: CONFIG.UI.sizeTitle, color: C.primary, align: 'center', shadow: true,
       });
       Render.text('THE GATE IS OPEN — MORE LEVELS COMING SOON', cx, 140, {
-        size: CONFIG.UI.sizeItem, color: C.text, align: 'center',
+        size: CONFIG.UI.sizeItem, color: C.text, align: 'center', shadow: true,
       });
       Render.text('ENTER = MENU', cx, 168, {
-        size: CONFIG.UI.sizeSmall, color: C.textDim, align: 'center',
+        size: CONFIG.UI.sizeSmall, color: C.textDim, align: 'center', shadow: true,
       });
     }
   }

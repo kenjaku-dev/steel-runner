@@ -14,6 +14,10 @@ const ctxMock = {
   fillRect() {}, strokeRect() {}, fillText() {},
   save() {}, restore() {}, translate() {}, scale() {},
   beginPath() {}, arc() {}, stroke() {}, // slash arcs (sword strike motion)
+  moveTo() {}, lineTo() {}, closePath() {}, fill() {}, // backdrop hills
+  drawImage() {},                                    // (future) sprites
+  createLinearGradient: () => ({ addColorStop() {} }),  // skies
+  createRadialGradient: () => ({ addColorStop() {} }),  // fx vignette
 };
 const canvasMock = { getContext: () => ctxMock, style: {}, width: 0, height: 0 };
 globalThis.document = { getElementById: () => canvasMock };
@@ -506,4 +510,23 @@ assert.ok(Camera.shaking, 'camera shake did not start');
 Camera.update(0.3);
 assert.ok(!Camera.shaking, 'camera shake never ended');
 
-console.log('SMOKE TEST PASSED — steps 1-8 OK: loop, screens, level pages, doors, boss, pause, game over, hub, polish');
+/* ---------- step 9: graphics overhaul (backdrop / fx / hud) ---------- */
+// backdrop: every theme draws without crashing (gradients, parallax, motes)
+assert.strictEqual(typeof Backdrop.draw, 'function', 'Backdrop.draw missing');
+for (const theme of ['grass', 'desert', 'mine', 'factory', 'boss']) {
+  Backdrop.draw(theme, 120, 40, 1.5);
+}
+
+// fx: scanlines/vignette draw, hit pulse + flash decay through update
+assert.strictEqual(typeof Fx.draw, 'function', 'Fx.draw missing');
+Fx.hit(1);
+Fx.update(0.1); Fx.draw();
+Fx.flash(0.2);
+Fx.update(0.3); Fx.draw();
+Fx.reset();
+
+// menu must build its night scene (gradient cache + stars) on enter
+Game.switchTo('menu');
+pump(3);
+
+console.log('SMOKE TEST PASSED — steps 1-9 OK: loop, screens, level pages, doors, boss, pause, game over, hub, polish, graphics');
