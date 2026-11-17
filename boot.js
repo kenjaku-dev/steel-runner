@@ -16,6 +16,7 @@
     'systems/input.js', 'systems/render.js',
     'systems/physics.js', 'systems/camera.js',
     'systems/weapons.js', 'systems/hud.js',
+    'systems/particles.js', 'systems/sound.js',
     'entities/bullets.js', 'entities/enemies.js',
     'entities/player.js', 'entities/boss.js',
     'levels/level.loader.js',

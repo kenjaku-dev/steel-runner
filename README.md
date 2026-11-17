@@ -48,6 +48,8 @@ systems/
   camera.js           smooth follow camera clamped to world
   weapons.js          data-driven weapon definitions (add weapon = add object)
   hud.js              in-game HUD: hearts, level tag, boss bar, weapon bar
+  particles.js        bursts, landing dust, impact sparks (pure juice)
+  sound.js            WebAudio synth SFX + chiptune music (no files)
 entities/
   bullets.js          one bullet system for all weapons + muzzle flashes
   enemies.js          walker / flyer / turret + contact & bullet damage
@@ -66,6 +68,8 @@ screens/              every screen = own file, interface {enter,update,draw}
   screen.game.js      game screen: plays levels via LevelLoader
   screen.pause.js     pause overlay (resume / restart level / quit)
   screen.gameover.js  game over (retry from checkpoint / quit)
+tests/
+  smoke.js            headless full-game test (node tests/smoke.js)
 ```
 
 ## Roadmap
@@ -76,7 +80,7 @@ screens/              every screen = own file, interface {enter,update,draw}
 5. [x] Levels 1–4 (loader, doors, key, themes)
 6. [x] Level 5 + first boss (3 phases)
 7. [x] HUD, pause, game over screens wiring
-8. [ ] Polish: particles, sound, jump feel, difficulty balance
+8. [x] Polish: particles, sound, jump feel, difficulty balance
 
 ## Balance (v1.1 — "beatable" patch)
 - Player: normal HP 5→6, hard 3→4; hit grace 1.0s→1.2s; softer knockback (no more pit launches)
@@ -84,6 +88,23 @@ screens/              every screen = own file, interface {enter,update,draw}
 - Turrets: bullet speed 110→85, fire rate 1.6s→2.0s, range 150→130
 - Walkers: speed 30→26
 - Boss resets to full HP when the player dies — every retry starts the fight fresh
+
+## Polish (v0.2)
+- Particles: enemy & boss death bursts, landing dust, bullet impact sparks
+- Sound: every SFX + a 2-voice chiptune music loop synthesized live with WebAudio — zero audio files; music switches to a darker, faster theme on boss levels; volumes come from Settings (MUSIC/SFX VOL)
+- Screen shake (toggle in Settings) on player hits, boss slams and boss death
+- Jump feel: landing squash & stretch + dust when dropping from height
+
+## Git
+The repo tags mark playable milestones (`v0.1.0`, `v0.2.0`):
+
+```bash
+git status                    # what changed
+git add -A && git commit -m "what you changed"   # save a checkpoint
+git log --oneline             # history
+git checkout v0.2.0           # play an old version
+git checkout main             # back to latest
+```
 
 ## How to extend
 - **New game file:** add ONE line to `boot.js` `SCRIPTS` — every page loads it automatically.

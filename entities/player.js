@@ -110,12 +110,14 @@ const Player = (() => {
       invincibleT: 0,  // hit grace period (blink)
       deaths: 0,
       dead: false,     // true between death and game-over RETRY
+      landT: 0,        // landing squash timer
       spawnX: x, spawnY: y,
       checkpoint: null, // set by checkpoint flags (screen)
 
       update(dt, world) {
         if (this.dead) return; // game-over screen takes it from here
         this.invincibleT = Math.max(0, this.invincibleT - dt);
+        this.landT = Math.max(0, this.landT - dt);
         const runDir = (Input.right() ? 1 : 0) - (Input.left() ? 1 : 0);
         if (runDir !== 0) {
           this.vx += runDir * P.accel * dt;
@@ -147,6 +149,7 @@ const Player = (() => {
           this.vy = -P.jumpVel;
           this.coyote = 0;
           this.jumpBuffer = 0;
+          Sound.play('jump');
         }
 
         // variable jump height: releasing early caps the rise
@@ -155,8 +158,16 @@ const Player = (() => {
 
         this.vy = Math.min(this.vy + P.gravity * dt, P.maxFall);
 
+        const wasGrounded = this.grounded;
+        const vyBefore = this.vy;
         Physics.moveAndCollide(this, world.solids, dt);
         this.animT += dt;
+
+        // landing juice: dust + squash when hitting the ground hard
+        if (!wasGrounded && this.grounded && vyBefore > 180) {
+          this.landT = 0.12;
+          Particles.puff(this.x + this.w / 2, this.y + this.h);
+        }
       },
 
       switchWeapon(i) {
@@ -171,6 +182,7 @@ const Player = (() => {
 
       fire() {
         const def = Weapons.get(this.weapon);
+        Sound.play(Weapons.order[this.weapon]); // pistol | shotgun | laser
         this.cooldown = def.fireRate;
         const mx = this.facing > 0 ? this.x + this.w + 2 : this.x - 2;
         const my = this.y + 7;
@@ -186,6 +198,8 @@ const Player = (() => {
         this.invincibleT = 1.2; // grace window after a hit
         this.vx = (fromDir || 1) * 45; // soft knockback (no pit launches)
         this.vy = -40;
+        Sound.play('hurt');
+        Camera.shake(2, 0.2);
         if (this.hp <= 0) this.die();
       },
 
@@ -194,6 +208,7 @@ const Player = (() => {
         this.dead = true;
         this.deaths++;
         Bullets.clear();
+        Sound.play('playerDie');
         // respawn is handled by the game-over screen (RETRY)
       },
 
@@ -222,6 +237,12 @@ const Player = (() => {
         ctx.save();
         ctx.translate(this.facing < 0 ? x + this.w : x, y);
         if (this.facing < 0) ctx.scale(-1, 1);
+        if (this.landT > 0) {
+          // squash & stretch around the feet (bottom-center of the frame)
+          const sx = 1 + this.landT * 1.2;
+          const sy = 1 - this.landT * 1.6;
+          ctx.translate(6, 16); ctx.scale(sx, sy); ctx.translate(-6, -16);
+        }
         if (!blink) {
           for (let r = 0; r < frame.length; r++) {
             const row = frame[r];

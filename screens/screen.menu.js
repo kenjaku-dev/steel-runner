@@ -14,6 +14,7 @@ const ScreenMenu = (() => {
 
   function enter() {
     sel = 0;
+    Sound.stopMusic(); // menus are quiet
     t = 0;
     stars = [];
     for (let i = 0; i < 40; i++) {
@@ -33,9 +34,14 @@ const ScreenMenu = (() => {
       if (st.x < 0) st.x = Render.w;
     }
 
+    const prev = sel;
     if (Input.justPressed('ArrowUp', 'w')) sel = (sel + items.length - 1) % items.length;
     if (Input.justPressed('ArrowDown', 's')) sel = (sel + 1) % items.length;
-    if (Input.confirm() && items[sel]) items[sel].action();
+    if (sel !== prev) Sound.play('uiMove');
+    if (Input.confirm() && items[sel]) {
+      Sound.play('uiSelect');
+      items[sel].action();
+    }
   }
 
   function draw() {

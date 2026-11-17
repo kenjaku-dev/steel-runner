@@ -26,15 +26,14 @@ const Boss = (() => {
         if (this.hp <= 0) return;
         this.hp -= dmg;
         this.hitFlash = 0.12;
+        Sound.play('bossHit');
         if (this.hp <= 0) {
-          // death pop
-          for (let i = 0; i < 6; i++) {
-            Bullets.flash(
-              this.x + 8 + Math.random() * (this.w - 16),
-              this.y + 8 + Math.random() * (this.h - 16),
-              i % 2 ? CONFIG.COLORS.primary : CONFIG.COLORS.danger
-            );
-          }
+          // death explosion: burst + boom + shake
+          Particles.burst(this.x + this.w / 2, this.y + this.h / 2, 24,
+            CONFIG.COLORS.primary,
+            { colors: [CONFIG.COLORS.primary, CONFIG.COLORS.danger, '#ffffff'], speed: 140, life: 0.8 });
+          Sound.play('bossDie');
+          Camera.shake(5, 0.5);
         }
       },
     };
@@ -108,6 +107,8 @@ const Boss = (() => {
         if (b.stateT <= 0) {
           wave(b, -1);
           wave(b, 1);
+          Sound.play('slam');
+          Camera.shake(3, 0.25);
           b.state = 'walk';
           b.slamTimer = 2.4;
         }
@@ -129,6 +130,8 @@ const Boss = (() => {
           b.slamTimer = 3.0;
           wave(b, -1);
           wave(b, 1);
+          Sound.play('slam');
+          Camera.shake(3, 0.25);
         }
       }
     }

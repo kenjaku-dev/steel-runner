@@ -20,6 +20,8 @@ const ScreenGame = (() => {
     player = Player.create(level.spawn.x, level.spawn.y);
     Camera.reset();
     Bullets.clear();
+    Particles.clear();
+    Sound.startMusic(LevelLoader.isBoss(levelIndex) ? 'boss' : 'game');
 
     world = {
       w: level.w, h: level.h,
@@ -70,6 +72,8 @@ const ScreenGame = (() => {
     Boss.update(dt, world);
     Bullets.update(dt, world);
     Camera.follow(player, world, dt);
+    Camera.update(dt);
+    Particles.update(dt);
 
     // fell out of the world
     if (player.y > world.h + 30) player.die();
@@ -86,6 +90,8 @@ const ScreenGame = (() => {
         activated.add(cp);
         player.checkpoint = { x: cp.x, y: cp.y };
         Bullets.flash(cp.x + 4, cp.y, CONFIG.COLORS.success);
+        Particles.spark(cp.x + 4, cp.y - 8, CONFIG.COLORS.success);
+        Sound.play('checkpoint');
       }
     }
 
@@ -93,16 +99,21 @@ const ScreenGame = (() => {
     if (level.key && !hasKey && Physics.overlap(player, keyRect())) {
       hasKey = true;
       Bullets.flash(level.key.x + 4, level.key.y + 4, CONFIG.COLORS.success);
+      Particles.burst(level.key.x + 4, level.key.y + 4, 6, CONFIG.COLORS.primary, { speed: 60 });
+      Sound.play('pickup');
     }
 
     // exit door -> next level, or victory when none is left
     if (!doorLocked() && Physics.overlap(player, doorRect())) {
-      if (LevelLoader.next()) enter();
-      else victory = true;
+      if (LevelLoader.next()) { Sound.play('door'); enter(); }
+      else { victory = true; Sound.stopMusic(); Sound.play('victory'); }
       return;
     }
 
-    if (Input.cancel()) Game.switchTo('pause');
+    if (Input.cancel()) {
+      Sound.play('pause');
+      Game.switchTo('pause');
+    }
   }
 
   // drawFrame = world + HUD only (screen.pause / screen.gameover
@@ -155,6 +166,7 @@ const ScreenGame = (() => {
     Enemies.draw(Render.ctx);
     Boss.draw(Render.ctx, world.boss);
     Bullets.draw(Render.ctx);
+    Particles.draw(Render.ctx);
     Render.ctx.restore();
 
     // ---- HUD (screen space, own module) ----

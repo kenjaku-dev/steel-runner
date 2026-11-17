@@ -79,7 +79,11 @@ const Bullets = (() => {
         b.y < -20 || b.y > world.h + 20;
       if (!dead) {
         for (const s of world.solids) {
-          if (Physics.overlap(b, s)) { dead = true; break; }
+          if (Physics.overlap(b, s)) {
+            Particles.spark(b.x, b.y, b.color);
+            dead = true;
+            break;
+          }
         }
       }
       // player bullets -> enemies (laser pierces several)

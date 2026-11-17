@@ -60,9 +60,11 @@ const Enemies = (() => {
     e.hp -= dmg;
     e.hitFlash = 0.12;
     if (e.hp <= 0) {
-      // death pop
-      Bullets.flash(e.x + e.w / 2, e.y + e.h / 2, CONFIG.COLORS.success);
-      Bullets.flash(e.x + e.w / 2 - 2, e.y + e.h / 2 + 2, TYPES[e.type].color);
+      // death pop: particle burst + sound
+      Particles.burst(e.x + e.w / 2, e.y + e.h / 2, 8, TYPES[e.type].color, {
+        colors: [TYPES[e.type].color, CONFIG.COLORS.success, '#ffffff'],
+      });
+      Sound.play('enemyDie');
     }
   }
 

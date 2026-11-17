@@ -413,4 +413,30 @@ for (let i = 1; i <= 5; i++) {
   assert.ok(html.includes('boot.js'), `level${i}.html must load boot.js`);
 }
 
-console.log('SMOKE TEST PASSED — steps 1-7 OK: loop, screens, levels, boss, pause, game over, pages');
+/* ---------- step 8: polish systems (particles / sound / shake) ---------- */
+// particles spawn and decay
+Particles.clear();
+Particles.burst(100, 100, 10, '#ff0000');
+Particles.puff(100, 100);
+Particles.spark(100, 100, '#00ff00');
+assert.ok(Particles.count() >= 14, 'particles did not spawn');
+for (let i = 0; i < 60; i++) Particles.update(1 / 60);
+assert.strictEqual(Particles.count(), 0, 'particles never decayed');
+
+// sound system must exist and no-op safely without WebAudio
+assert.strictEqual(typeof Sound.play, 'function', 'Sound.play missing');
+Sound.play('pistol'); Sound.play('slam'); Sound.play('victory');
+Sound.startMusic('game'); Sound.startMusic('boss'); Sound.stopMusic();
+
+// camera shake honors the user setting and decays
+assert.strictEqual(typeof Camera.shake, 'function', 'Camera.shake missing');
+Settings.data.screenShake = false;
+Camera.shake(3, 0.25);
+assert.ok(!Camera.shaking, 'shake must respect the OFF setting');
+Settings.data.screenShake = true;
+Camera.shake(3, 0.25);
+assert.ok(Camera.shaking, 'camera shake did not start');
+Camera.update(0.3);
+assert.ok(!Camera.shaking, 'camera shake never ended');
+
+console.log('SMOKE TEST PASSED — steps 1-8 OK: loop, screens, levels, boss, pause, game over, pages, polish');
