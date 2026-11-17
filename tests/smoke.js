@@ -364,7 +364,7 @@ location.href = '';
 
 /* ---------- step 5: level pages & door navigation ---------- */
 // structure: every level is ONE self-contained page in levels/
-for (let i = 1; i <= 5; i++) {
+for (let i = 1; i <= 10; i++) {
   const html = fs.readFileSync(`${DIR}/levels/level${i}.html`, 'utf8');
   assert.ok(html.includes(`__START_LEVEL = ${i}`), `levels/level${i}.html start-level hook wrong`);
   assert.ok(html.includes('id="level-data"'), `levels/level${i}.html missing its data block`);
@@ -372,6 +372,8 @@ for (let i = 1; i <= 5; i++) {
 }
 assert.strictEqual(LevelLoader.isBoss(4), true, 'level 5 must be boss');
 assert.ok(!LevelLoader.isBoss(3), 'level 4 must not be boss');
+assert.strictEqual(LevelLoader.isBoss(9), true, 'level 10 must be boss');
+assert.ok(!LevelLoader.isBoss(8), 'level 9 must not be boss');
 
 // page 1: touch the open door -> navigate to level2.html
 gotoPage(1);
@@ -479,6 +481,162 @@ assert.strictEqual(globalThis.__game.victory, true, 'boss door did not trigger v
 key('Enter'); pump(2);
 assert.strictEqual(location.href, '../index.html', 'victory did not navigate to the hub');
 location.href = '';
+// the victory saves CONTINUE progress pointing at the next world
+assert.strictEqual(LevelLoader.progress(), 6, 'victory did not save CONTINUE progress');
+
+/* ---------- step 6b: new enemies (hopper / bomber / charger) ---------- */
+gotoPage(6); // fresh jungle page — room to test every new behaviour
+const np = globalThis.__game.player;
+
+// HOPPER: crouch telegraph -> leap arc at the player
+Enemies.spawnAll([{ type: 'hopper', x: 300, y: 236 }]);
+const hop = Enemies.list()[0];
+hop.cooldown = 0; // ready immediately
+np.hp = np.maxHp; np.invincibleT = 0;
+np.x = 340; np.y = 230; np.vx = 0; np.vy = 0;
+let leapt = false, hopMin = hop.y;
+for (let i = 0; i < 120; i++) {
+  pump(1);
+  if (hop.y < hopMin) hopMin = hop.y;
+  if (hop.state === 'leap') leapt = true;
+}
+assert.ok(leapt, 'hopper never leapt');
+assert.ok(hop.y - hopMin > 20, 'hopper leap arc too flat');
+Enemies.clear(); Bullets.clear();
+
+// BOMBER: drops a gravity bomb; it detonates on the ground near you
+// (x 600 is a clear column on the jungle page: no canopy shelf above)
+Enemies.spawnAll([{ type: 'bomber', x: 600, y: 90 }]);
+const bo = Enemies.list()[0];
+np.hp = np.maxHp; np.invincibleT = 0;
+np.x = 600; np.y = 230; np.vx = 0; np.vy = 0;
+bo.cooldown = 0.01; bo.baseY = 90; bo.y = 90; bo.t = 0;
+pump(30);
+assert.ok(bo.bombs >= 1, 'bomber never dropped a bomb');
+const bomb = Bullets.list().find((bm) => bm.bomb);
+assert.ok(bomb, 'dropped bomb missing');
+assert.ok(bomb.grav > 0, 'bomb carries no gravity');
+const hpBeforeBomb = np.hp;
+pump(120); // the bomb falls ~0.9s, then the blast / hit lands
+assert.ok(np.hp < hpBeforeBomb, 'bomb did not hurt the player');
+Enemies.clear(); Bullets.clear();
+
+// CHARGER: white tell flash, then a fast dash (stuns when blocked)
+Enemies.spawnAll([{ type: 'charger', x: 500, y: 234 }]);
+const ch = Enemies.list()[0];
+np.hp = np.maxHp; np.invincibleT = 0;
+np.x = 560; np.y = 230; np.vx = 0; np.vy = 0;
+let told = false, dashed = false;
+for (let i = 0; i < 150; i++) {
+  pump(1);
+  if (ch.state === 'tell') told = true;
+  if (ch.state === 'dash') dashed = true;
+}
+assert.ok(told, 'charger never telegraphed');
+assert.ok(dashed, 'charger never dashed');
+assert.ok(Math.abs(ch.x - 500) > 20, 'charger dash did not move it');
+Enemies.clear(); Bullets.clear();
+
+// PICKUPS: heal one heart when hurt; stay available at full health
+const pk = globalThis.__game.level.pickups[0];
+np.x = pk.x - 2; np.y = pk.y - 6; np.vx = 0; np.vy = 0;
+pump(3); // standing on the heart at FULL health: must not consume it
+assert.strictEqual(globalThis.__game.collectedCount, 0, 'pickup consumed at full health');
+np.hp = 1;
+pump(3);
+assert.strictEqual(globalThis.__game.collectedCount, 1, 'pickup did not get used');
+assert.ok(np.hp > 1, 'pickup did not restore hp');
+
+/* ---------- step 6c: door navigation for the new worlds ---------- */
+// page 6 -> page 7 (jungle)
+location.href = '';
+gotoPage(6);
+gp = globalThis.__game.player;
+gp.x = 2012; gp.y = 230; gp.vx = 0; gp.vy = 0;
+pump(3);
+assert.strictEqual(location.href, 'level7.html', 'level 6 door did not navigate');
+
+// page 7 -> page 8 (keyed vault: grab the key first)
+location.href = '';
+gotoPage(7);
+gp = globalThis.__game.player;
+gp.x = 918; gp.y = 98; gp.vx = 0; gp.vy = 0;
+pump(2);
+assert.strictEqual(globalThis.__game.hasKey, true, 'level 7 key not picked up');
+gp.x = 2012; gp.y = 230; gp.vx = 0; gp.vy = 0;
+pump(3);
+assert.strictEqual(location.href, 'level8.html', 'keyed level 7 door did not navigate');
+
+// page 8 -> page 9 (sky)
+location.href = '';
+gotoPage(8);
+gp = globalThis.__game.player;
+gp.x = 2112; gp.y = 230; gp.vx = 0; gp.vy = 0;
+pump(3);
+assert.strictEqual(location.href, 'level9.html', 'level 8 door did not navigate');
+
+// page 9 -> page 10 (final boss arena)
+location.href = '';
+gotoPage(9);
+gp = globalThis.__game.player;
+gp.x = 2112; gp.y = 230; gp.vx = 0; gp.vy = 0;
+pump(3);
+assert.strictEqual(location.href, 'level10.html', 'level 9 door did not navigate to the final boss');
+
+/* ---------- step 6d: boss 2 — VOLT WRAITH (page 10) ---------- */
+// pause QUIT returns to the hub from a mid-run page too
+location.href = '';
+gp.x = 100; gp.y = 230; gp.vx = 0; gp.vy = 0; // step out of the door first
+pump(2);
+key('Escape'); pump(2);
+assert.strictEqual(last, 'pause', 'ESC did not open pause after level 9');
+key('ArrowDown'); pump(1); key('ArrowDown'); pump(1); key('Enter'); pump(2);
+assert.strictEqual(location.href, '../index.html', 'pause QUIT did not navigate to the hub');
+location.href = '';
+
+// arrive fresh on the final boss page
+gotoPage(10);
+assert.strictEqual(globalThis.__game.levelIndex, 9, 'not on the final boss page');
+const wraith = globalThis.__game.world.boss;
+assert.ok(wraith, 'wraith not created');
+assert.strictEqual(wraith.name, 'VOLT WRAITH', 'wrong boss name');
+assert.strictEqual(wraith.hp, 80, 'wraith should start at 80 hp');
+assert.deepStrictEqual(wraith.notches, [52, 26], 'wraith notches wrong');
+const fp = globalThis.__game.player;
+fp.invincibleT = 99999; // keep the run alive while the boss attacks
+
+// phase 1: rotating radial electric bursts
+pump(200);
+assert.ok(Bullets.countHostile() >= 1, 'wraith phase 1 produced no radial shots');
+
+// phase 2 at hp <= 52: telegraphed dive crashes begin
+wraith.hurt(29);                    // 80 - 29 = 51 -> phase 2
+pump(1);                            // the phase change lands on the boss's tick
+assert.strictEqual(wraith.phase, 2, 'wraith did not enter phase 2');
+let dove = false;
+for (let i = 0; i < 240; i++) { pump(1); if (wraith.state === 'dive') dove = true; }
+assert.ok(dove, 'wraith never dive-crashed in phase 2');
+assert.ok(Bullets.countHostile() >= 1, 'wraith phase 2 produced no shots');
+
+// phase 3 (rage) at hp <= 26
+wraith.hurt(26);                    // 51 - 26 = 25 -> phase 3
+pump(1);
+assert.strictEqual(wraith.phase, 3, 'wraith did not enter phase 3');
+wraith.hurt(16);
+assert.strictEqual(wraith.hp, 9, 'wraith hp math off');
+
+// final blow -> door unlocks -> victory -> hub page
+wraith.hurt(80);
+pump(2);
+assert.ok(wraith.hp <= 0, 'wraith did not die');
+fp.x = 1492; fp.y = 230; fp.vx = 0; fp.vy = 0;   // boss door at x 1500
+pump(3);
+assert.strictEqual(globalThis.__game.victory, true, 'wraith door did not trigger victory');
+key('Enter'); pump(2);
+assert.strictEqual(location.href, '../index.html', 'victory did not navigate to the hub');
+location.href = '';
+// CONTINUE progress caps at the final world (replayable)
+assert.strictEqual(LevelLoader.progress(), 10, 'final victory did not keep progress at 10');
 
 // keyup clears held state without crashing
 key('ArrowLeft', 'keyup'); key('a', 'keyup'); pump(10);
@@ -491,9 +649,10 @@ const idxHtml = fs.readFileSync(`${DIR}/index.html`, 'utf8');
 assert.ok(idxHtml.includes('boot.js'), 'index.html must load boot.js');
 assert.ok(idxHtml.includes('URLSearchParams'), 'index.html lost the ?level deep link');
 assert.ok(idxHtml.includes("location.href = 'levels/level'"), 'hub ?level redirect must go to levels/');
+assert.ok(idxHtml.includes('Number(q) <= 10'), 'hub deep link lost levels 6-10');
 
 // the old per-level launchers/data files must be gone (one page per level)
-for (let i = 1; i <= 5; i++) {
+for (let i = 1; i <= 10; i++) {
   assert.ok(!fs.existsSync(`${DIR}/level${i}.html`), `old root level${i}.html still exists`);
   assert.ok(!fs.existsSync(`${DIR}/levels/level${i}.js`), `old levels/level${i}.js still exists`);
 }
@@ -511,6 +670,7 @@ assert.strictEqual(Particles.count(), 0, 'particles never decayed');
 // sound system must exist and no-op safely without WebAudio
 assert.strictEqual(typeof Sound.play, 'function', 'Sound.play missing');
 Sound.play('pistol'); Sound.play('slam'); Sound.play('victory');
+Sound.play('heal'); Sound.play('boom'); Sound.play('tell'); Sound.play('dive');
 Sound.startMusic('game'); Sound.startMusic('boss'); Sound.stopMusic();
 
 // camera shake honors the user setting and decays
@@ -527,7 +687,7 @@ assert.ok(!Camera.shaking, 'camera shake never ended');
 /* ---------- step 9: graphics overhaul (backdrop / fx / hud) ---------- */
 // backdrop: every theme draws without crashing (gradients, parallax, motes)
 assert.strictEqual(typeof Backdrop.draw, 'function', 'Backdrop.draw missing');
-for (const theme of ['grass', 'desert', 'mine', 'factory', 'boss']) {
+for (const theme of ['grass', 'desert', 'mine', 'factory', 'boss', 'jungle', 'ice', 'sky', 'volcano', 'core']) {
   Backdrop.draw(theme, 120, 40, 1.5);
 }
 
@@ -541,7 +701,7 @@ Fx.reset();
 
 // music: every level theme is its own song (legacy 'game' still maps)
 assert.strictEqual(typeof Sound.startMusic, 'function', 'Sound.startMusic missing');
-for (const s of ['grass', 'desert', 'mine', 'factory', 'boss']) {
+for (const s of ['grass', 'desert', 'mine', 'factory', 'boss', 'jungle', 'ice', 'sky', 'volcano', 'core']) {
   Sound.startMusic(s); // no-op without WebAudio, but must not crash
 }
 Sound.startMusic('game');
@@ -557,4 +717,4 @@ pump(3);
 assert.strictEqual(weaponBarState.on, true, 'game must show the DOM weapon bar');
 HUD.weaponBar(window.__game.player); // rebuild + highlight without a layout engine
 
-console.log('SMOKE TEST PASSED — steps 1-9 OK: loop, screens, level pages, doors, boss, pause, game over, hub, polish, graphics, music, weapon bar');
+console.log('SMOKE TEST PASSED — steps 1-9 OK: loop, screens, 10 level pages, doors, 2 bosses, pause, game over, hub, polish, new enemies, pickups, graphics, music, weapon bar');

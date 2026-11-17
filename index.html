@@ -14,7 +14,7 @@
 ===================================================== -->
 <script>
   const q = new URLSearchParams(location.search).get('level');
-  if (q && Number(q) >= 1 && Number(q) <= 5) {
+  if (q && Number(q) >= 1 && Number(q) <= 10) {
     location.href = 'levels/level' + Number(q) + '.html';
   }
 </script>

@@ -1,13 +1,34 @@
 /* =============================================================
  * level.loader.js — level registry + progression + themes.
- * Level files call LevelLoader.register({...}). Every 5th level
+ * Level files call LevelLoader.solo({...}). Every 5th level
  * (index 4, 9, 14...) is auto-flagged as a BOSS level.
- * Adding level 6+ later = add a file, nothing else.
+ * Adding a level = add a page file, nothing else.
+ * Also owns the SAVE PROGRESS (CONTINUE in the menu): the highest
+ * level reached is stored in localStorage so the player can pick
+ * up where the run left off.
  * ============================================================= */
 const LevelLoader = (() => {
   const LEVELS = [];
   let index = 0;
   let soloData = null, soloIndex = 0; // single-page mode (levels/*.html)
+
+  // ---- save progress (the menu's CONTINUE entry) ----
+  const PROGRESS_KEY = 'steel-runner.progress.v1';
+  const MAX_LEVEL = 10;
+
+  function progress() {
+    try {
+      return Math.max(1, Math.min(MAX_LEVEL, Number(localStorage.getItem(PROGRESS_KEY)) || 1));
+    } catch (e) { return 1; }
+  }
+
+  // saveProgress(n): remember the highest level reached (never lowers)
+  function saveProgress(n) {
+    try {
+      const cap = Math.min(n, MAX_LEVEL);
+      if (cap > progress()) localStorage.setItem(PROGRESS_KEY, String(cap));
+    } catch (e) { /* storage unavailable — progress simply not saved */ }
+  }
 
   // 16-bit palettes per world theme (tokens for level art)
   const THEMES = {
@@ -30,6 +51,26 @@ const LevelLoader = (() => {
     boss: {
       bg: '#120a10', ground: '#33161e', groundTop: '#7a2e3a',
       plat: '#241420', platTop: '#4e2230', platLine: '#3a1c26',
+    },
+    jungle: {
+      bg: '#0a1a10', ground: '#1c3418', groundTop: '#3f7a34',
+      plat: '#20301e', platTop: '#4a7a3a', platLine: '#2c4024',
+    },
+    ice: {
+      bg: '#0a1220', ground: '#1c2c44', groundTop: '#9adcf0',
+      plat: '#243650', platTop: '#5a8ab2', platLine: '#32486a',
+    },
+    sky: {
+      bg: '#101830', ground: '#2a3462', groundTop: '#8ff0f6',
+      plat: '#303c6c', platTop: '#6a7ac2', platLine: '#444e8a',
+    },
+    volcano: {
+      bg: '#160806', ground: '#3a1a10', groundTop: '#c2522a',
+      plat: '#2c1410', platTop: '#8a3a20', platLine: '#4a241a',
+    },
+    core: {
+      bg: '#10060c', ground: '#2a1020', groundTop: '#6a2a4a',
+      plat: '#241020', platTop: '#542a48', platLine: '#3a1830',
     },
   };
 
@@ -78,6 +119,7 @@ const LevelLoader = (() => {
 
   return {
     LEVELS, THEMES, register, solo, get, count, isBoss, go, next,
+    progress, saveProgress,
     get current() { return index; },
   };
 })();

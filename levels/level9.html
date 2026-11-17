@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEEL RUNNER — LEVEL 9: MAGMA WORKS</title>
+</head>
+<body>
+<!-- =====================================================
+  LEVEL 9 — self-contained page: the level data AND the full
+  game live in this ONE file. Edit the data block below to
+  change this level; boot.js (project root) loads the engine.
+  MAGMA WORKS: the full gauntlet before the final boss —
+  every enemy type together over lava pits, so all the
+  mechanics learned in levels 6-8 get tested for real.
+===================================================== -->
+<script src="../boot.js"></script>
+<script id="level-data">
+window.__START_LEVEL = 9; // boot straight into the game
+LevelLoader.solo(8, {
+  name: 'MAGMA WORKS',
+  theme: 'volcano',
+  w: 2200, h: 270,
+  spawn: { x: 40, y: 200 },
+  exit: { x: 2120, y: 214 },
+  checkpoints: [{ x: 620, y: 230 }, { x: 1150, y: 230 }, { x: 1700, y: 230 }],
+  platforms: [
+    // foundry ground over the lava
+    { x: 0,    y: 246, w: 500, h: 24 },
+    { x: 560,  y: 246, w: 320, h: 24 },
+    { x: 940,  y: 246, w: 420, h: 24 },
+    { x: 1400, y: 246, w: 800, h: 24 },
+    // scaffolds
+    { x: 120,  y: 200, w: 72, h: 10 },
+    { x: 300,  y: 160, w: 72, h: 10 },
+    { x: 460,  y: 200, w: 72, h: 10 },
+    { x: 640,  y: 140, w: 72, h: 10 },
+    { x: 820,  y: 190, w: 72, h: 10 },
+    { x: 1000, y: 150, w: 72, h: 10 },
+    { x: 1180, y: 110, w: 72, h: 10 },
+    { x: 1360, y: 170, w: 72, h: 10 },
+    { x: 1540, y: 120, w: 72, h: 10 },
+    { x: 1700, y: 180, w: 72, h: 10 },
+    { x: 1880, y: 130, w: 72, h: 10 },
+    { x: 2020, y: 180, w: 72, h: 10 },
+  ],
+  pickups: [
+    { x: 322,  y: 146 },
+    { x: 1202, y: 96 },
+    { x: 1562, y: 106 },
+    { x: 1902, y: 116 },
+  ],
+  enemies: [
+    // the gauntlet: everything at once, in escalating clusters
+    { type: 'walker',  x: 250,  y: 236 },
+    { type: 'walker',  x: 700,  y: 236 },
+    { type: 'walker',  x: 1450, y: 236 },
+    { type: 'walker',  x: 1950, y: 236 },
+    { type: 'hopper',  x: 400,  y: 236 },
+    { type: 'hopper',  x: 1100, y: 236 },
+    { type: 'hopper',  x: 1800, y: 236 },
+    { type: 'charger', x: 850,  y: 234 },
+    { type: 'charger', x: 2050, y: 234 },
+    { type: 'bomber',  x: 600,  y: 80 },
+    { type: 'bomber',  x: 1300, y: 70 },
+    { type: 'flyer',   x: 900,  y: 85 },
+    { type: 'flyer',   x: 1750, y: 75 },
+    { type: 'turret',  x: 500,  y: 234 },
+    { type: 'turret',  x: 1250, y: 234 },
+    { type: 'turret',  x: 1980, y: 234 },
+  ],
+});
+</script>
+</body>
+</html>

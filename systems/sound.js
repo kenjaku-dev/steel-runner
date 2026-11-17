@@ -116,6 +116,13 @@ const Sound = (() => {
       [523, 659, 784, 1047, 784, 1047].forEach((f, i) =>
         tone(dst, t() + i * 0.11, f, f, 0.1, 'square', 0.22));
     },
+    heal: (dst) => {
+      tone(dst, t(), 520, 780, 0.12, 'triangle', 0.2);
+      tone(dst, t() + 0.09, 780, 1170, 0.14, 'triangle', 0.18);
+    },
+    boom: (dst) => { noise(dst, t(), 0.35, 0.4, 0.5); tone(dst, t(), 120, 30, 0.3, 'sawtooth', 0.3); },
+    tell: (dst) => tone(dst, t(), 980, 980, 0.06, 'square', 0.13),
+    dive: (dst) => tone(dst, t(), 900, 180, 0.25, 'sawtooth', 0.22),
     uiMove: (dst) => tone(dst, t(), 700, 700, 0.035, 'square', 0.12),
     uiSelect: (dst) => tone(dst, t(), 440, 880, 0.08, 'square', 0.18),
     pause: (dst) => tone(dst, t(), 500, 260, 0.1, 'square', 0.2),
@@ -214,6 +221,77 @@ const Sound = (() => {
       ],
       arpChords: [[57, 60, 64, 69], [57, 60, 64, 69], [53, 57, 60, 65], [52, 56, 59, 64]],
       drums: ['k.hks.hks.hk.s.h', 'k.hks.hks.hk.s.h', 'k.hks.hks.hk.s.h', 'kkhhk.hks.hks.hh'],
+    },
+    // LEVEL 6 — CANOPY OUTPOST: tribal bounce, marimba-ish triangle (C G Am F)
+    jungle: {
+      bpm: 118, leadWave: 'triangle', leadVol: 0.16, bassVol: 0.40, arpVol: 0.05, drumsVol: 0.8,
+      roots: [48, 43, 45, 41],
+      bassPat: [0, null, 0, null, 7, null, 0, null, 0, null, 10, null, 7, null, 12, null],
+      lead: [
+        72, 0, 76, 0, 79, 0, 76, 0, 72, 0, 67, 0, 72, 0, 76, 0,
+        74, 0, 71, 0, 74, 0, 79, 0, 74, 0, 71, 0, 67, 0, 71, 0,
+        69, 0, 72, 0, 76, 0, 72, 0, 81, 0, 79, 0, 76, 0, 72, 0,
+        77, 0, 74, 0, 72, 0, 69, 0, 72, 0, 74, 0, 72, 0, 69, 0,
+      ],
+      arpChords: [[48, 55, 60, 64], [43, 50, 55, 59], [45, 52, 57, 60], [41, 48, 53, 57]],
+      drums: ['k..hs..kk..hs.h.', 'k..hs..kk..hs..h', 'k..hs..kk..hs.h.', 'k.hhss.kkhhss.hh'],
+    },
+    // LEVEL 7 — GLACIER VAULT: glacial and sparse, echoes in the cold (Em C G D)
+    ice: {
+      bpm: 96, leadWave: 'triangle', leadVol: 0.17, bassVol: 0.42, arpVol: 0.05, drumsVol: 0.65,
+      echo: 0.22, // long cold slapback — the glacier's vastness
+      roots: [40, 36, 43, 38],
+      bassPat: [0, null, null, null, null, null, 0, null, null, null, 7, null, null, null, null, null],
+      lead: [
+        79, 0, 0, 0, 76, 0, 0, 0, 74, 0, 0, 0, 71, 0, 0, 0,
+        72, 0, 0, 0, 71, 0, 0, 0, 67, 0, 0, 0, 0, 0, 0, 0,
+        79, 0, 0, 0, 78, 0, 0, 0, 74, 0, 0, 0, 71, 0, 0, 0,
+        72, 0, 74, 0, 76, 0, 0, 0, 74, 0, 0, 0, 0, 0, 0, 0,
+      ],
+      arpChords: [[52, 59, 64, 67], [48, 55, 60, 64], [55, 62, 67, 71], [50, 57, 62, 66]],
+      drums: ['k.......s...h...', 'k.......s...h...', 'k.......s...h..k', 'k...h...s...h...'],
+    },
+    // LEVEL 8 — SKY ARCHIPELAGO: weightless, arp-forward shimmer (D A Bm G)
+    sky: {
+      bpm: 112, leadWave: 'square', leadVol: 0.11, bassVol: 0.36, arpVol: 0.09, drumsVol: 0.7,
+      roots: [38, 45, 47, 43],
+      bassPat: [0, null, null, 7, null, null, 0, null, 0, null, null, 7, null, null, 12, null],
+      lead: [
+        74, 0, 78, 0, 81, 0, 78, 0, 74, 0, 78, 0, 81, 0, 85, 0,
+        81, 0, 76, 0, 73, 0, 76, 0, 81, 0, 76, 0, 73, 0, 0, 0,
+        75, 0, 78, 0, 82, 0, 78, 0, 75, 0, 78, 0, 82, 0, 86, 0,
+        79, 0, 74, 0, 71, 0, 74, 0, 79, 0, 83, 0, 86, 0, 0, 0,
+      ],
+      arpChords: [[50, 57, 62, 66], [45, 52, 57, 61], [47, 54, 59, 63], [43, 50, 55, 59]],
+      drums: ['k...h...s.h.h...', 'k...h...s.h.h...', 'k...h...s.h.h...', 'k...h..ks.hh.h..'],
+    },
+    // LEVEL 9 — MAGMA WORKS: molten phrygian burn, saw riff (Em F G E)
+    volcano: {
+      bpm: 152, leadWave: 'sawtooth', leadVol: 0.10, bassVol: 0.44, arpVol: 0.05, drumsVol: 0.95,
+      roots: [40, 41, 43, 40],
+      bassPat: [0, 0, null, 0, 0, null, 0, null, 0, 0, null, 0, 12, 0, 10, 0],
+      lead: [
+        76, 76, 0, 76, 79, 0, 76, 0, 76, 76, 0, 76, 83, 0, 79, 0,
+        77, 77, 0, 77, 80, 0, 77, 0, 77, 77, 0, 77, 84, 0, 80, 0,
+        79, 79, 0, 79, 83, 0, 79, 0, 86, 0, 84, 0, 83, 0, 79, 0,
+        76, 0, 76, 0, 74, 0, 72, 0, 71, 0, 72, 0, 74, 0, 76, 0,
+      ],
+      arpChords: [[52, 55, 59, 64], [53, 57, 60, 65], [55, 59, 62, 67], [52, 55, 59, 64]],
+      drums: ['k.hkk.h.s.hkk.h.', 'k.hkk.h.s.hkk.h.', 'k.hkk.h.s.hkk.h.', 'kkhhk.h.sshhkkhh'],
+    },
+    // LEVEL 10 — THE IRON CORE: relentless electro-metal for VOLT WRAITH (Dm Dm C A)
+    core: {
+      bpm: 172, leadWave: 'square', leadVol: 0.13, bassVol: 0.48, arpVol: 0.06, drumsVol: 1.0,
+      roots: [38, 38, 36, 45],
+      bassPat: [0, 0, 12, 0, 10, 0, 12, 0, 0, 0, 12, 0, 10, 0, 7, 0],
+      lead: [
+        74, 0, 74, 77, 81, 0, 77, 0, 74, 0, 74, 77, 81, 0, 86, 0,
+        74, 0, 74, 77, 81, 0, 77, 0, 74, 0, 77, 0, 80, 0, 77, 0,
+        72, 0, 72, 76, 79, 0, 76, 0, 72, 0, 72, 76, 79, 0, 84, 0,
+        81, 0, 80, 0, 77, 0, 81, 0, 85, 0, 84, 0, 80, 0, 77, 0,
+      ],
+      arpChords: [[50, 53, 57, 62], [50, 53, 57, 62], [48, 52, 55, 60], [45, 49, 52, 57]],
+      drums: ['kkhhks.hkkhhks.h', 'kkhhks.hkkhhks.h', 'kkhhks.hkkhhks.h', 'kkhhks.hkskkks.h'],
     },
   };
 

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEEL RUNNER — LEVEL 6: CANOPY OUTPOST</title>
+</head>
+<body>
+<!-- =====================================================
+  LEVEL 6 — self-contained page: the level data AND the full
+  game live in this ONE file. Edit the data block below to
+  change this level; boot.js (project root) loads the engine.
+  CANOPY OUTPOST: the jungle teaches the HOPPER (crouch tell,
+  then a leap arc at you) in wide, safe ground sections.
+===================================================== -->
+<script src="../boot.js"></script>
+<script id="level-data">
+window.__START_LEVEL = 6; // boot straight into the game
+LevelLoader.solo(5, {
+  name: 'CANOPY OUTPOST',
+  theme: 'jungle',
+  w: 2100, h: 270,
+  spawn: { x: 40, y: 200 },
+  exit: { x: 2020, y: 214 },
+  checkpoints: [{ x: 600, y: 230 }, { x: 1200, y: 230 }, { x: 1650, y: 230 }],
+  platforms: [
+    // ground segments
+    { x: 0,    y: 246, w: 520, h: 24 },
+    { x: 560,  y: 246, w: 380, h: 24 },
+    { x: 980,  y: 246, w: 420, h: 24 },
+    { x: 1440, y: 246, w: 660, h: 24 },
+    // canopy walkways
+    { x: 150,  y: 200, w: 72, h: 10 },
+    { x: 320,  y: 168, w: 72, h: 10 },
+    { x: 470,  y: 204, w: 72, h: 10 },
+    { x: 660,  y: 150, w: 72, h: 10 },
+    { x: 830,  y: 190, w: 72, h: 10 },
+    { x: 1010, y: 150, w: 72, h: 10 },
+    { x: 1180, y: 110, w: 72, h: 10 },
+    { x: 1330, y: 170, w: 72, h: 10 },
+    { x: 1500, y: 120, w: 72, h: 10 },
+    { x: 1650, y: 170, w: 72, h: 10 },
+    { x: 1800, y: 130, w: 72, h: 10 },
+  ],
+  pickups: [
+    { x: 342,  y: 154 },
+    { x: 1202, y: 96 },
+    { x: 1822, y: 116 },
+  ],
+  enemies: [
+    // hoppers debut: open ground, easy to read, easy to bait
+    { type: 'hopper',  x: 300,  y: 236 },
+    { type: 'hopper',  x: 900,  y: 236 },
+    { type: 'hopper',  x: 1550, y: 236 },
+    { type: 'walker',  x: 480,  y: 236 },
+    { type: 'walker',  x: 1150, y: 236 },
+    { type: 'walker',  x: 1750, y: 236 },
+    { type: 'turret',  x: 1350, y: 234 },
+    { type: 'flyer',   x: 1050, y: 80 },
+  ],
+});
+</script>
+</body>
+</html>

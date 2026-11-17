@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEEL RUNNER — LEVEL 7: GLACIER VAULT</title>
+</head>
+<body>
+<!-- =====================================================
+  LEVEL 7 — self-contained page: the level data AND the full
+  game live in this ONE file. Edit the data block below to
+  change this level; boot.js (project root) loads the engine.
+  GLACIER VAULT: a keyed vault door. The BOMBER debuts here —
+  it patrols overhead and drops gravity bombs that explode on
+  the ground; grab the key high in the ice shelves.
+===================================================== -->
+<script src="../boot.js"></script>
+<script id="level-data">
+window.__START_LEVEL = 7; // boot straight into the game
+LevelLoader.solo(6, {
+  name: 'GLACIER VAULT',
+  theme: 'ice',
+  w: 2100, h: 270,
+  spawn: { x: 40, y: 200 },
+  exit: { x: 2020, y: 214 },
+  checkpoints: [{ x: 560, y: 230 }, { x: 1100, y: 230 }, { x: 1700, y: 230 }],
+  key: { x: 922, y: 96 },
+  platforms: [
+    // ice shelves
+    { x: 0,    y: 246, w: 460, h: 24 },
+    { x: 520,  y: 246, w: 300, h: 24 },
+    { x: 880,  y: 246, w: 520, h: 24 },
+    { x: 1460, y: 246, w: 640, h: 24 },
+    // climb to the key
+    { x: 130,  y: 210, w: 72, h: 10 },
+    { x: 270,  y: 175, w: 72, h: 10 },
+    { x: 410,  y: 140, w: 72, h: 10 },
+    { x: 560,  y: 190, w: 72, h: 10 },
+    { x: 720,  y: 150, w: 72, h: 10 },
+    { x: 900,  y: 110, w: 72, h: 10 },
+    { x: 1060, y: 170, w: 72, h: 10 },
+    { x: 1240, y: 130, w: 72, h: 10 },
+    { x: 1400, y: 180, w: 72, h: 10 },
+    { x: 1560, y: 140, w: 72, h: 10 },
+    { x: 1720, y: 100, w: 72, h: 10 },
+    { x: 1860, y: 160, w: 72, h: 10 },
+  ],
+  pickups: [
+    { x: 292,  y: 161 },
+    { x: 1262, y: 116 },
+    { x: 1742, y: 86 },
+  ],
+  enemies: [
+    // bombers debut: overhead danger with a readable drop tell
+    { type: 'bomber', x: 500,  y: 90 },
+    { type: 'bomber', x: 1000, y: 70 },
+    { type: 'bomber', x: 1600, y: 85 },
+    { type: 'walker', x: 300,  y: 236 },
+    { type: 'walker', x: 950,  y: 236 },
+    { type: 'walker', x: 1750, y: 236 },
+    { type: 'turret', x: 1300, y: 234 },
+    { type: 'turret', x: 1980, y: 234 },
+    { type: 'flyer',  x: 700,  y: 85 },
+  ],
+});
+</script>
+</body>
+</html>

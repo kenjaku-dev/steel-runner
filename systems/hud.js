@@ -65,11 +65,11 @@ const HUD = (() => {
       });
     }
 
-    // boss health bar: panel, phase notches at 40/20 hp, top glint
+    // boss health bar: panel, phase notches (from the boss), top glint
     if (world.boss && world.boss.hp > 0) {
       const b = world.boss;
       const bw = 220, bx = Math.round((Render.w - bw) / 2), by = 18;
-      Render.text('MECHA GUARDIAN', Render.w / 2, 8, {
+      Render.text(b.name ?? 'BOSS', Render.w / 2, 8, {
         size: CONFIG.UI.sizeSmall, color: C.danger, align: 'center', shadow: true,
       });
       Render.box(bx - 2, by - 2, bw + 4, 12, { fill: C.panel, border: C.panelLine });
@@ -79,9 +79,10 @@ const HUD = (() => {
       if (fw > 0) {
         Render.box(bx + 1, by + 1, fw, 1, { fill: 'rgba(255,255,255,0.30)' });
       }
-      // phase notches (the boss changes behaviour at 40 and 20 hp)
-      Render.box(bx + Math.round(bw * 40 / b.maxHp), by, 1, 8, { fill: '#24121a' });
-      Render.box(bx + Math.round(bw * 20 / b.maxHp), by, 1, 8, { fill: '#24121a' });
+      // phase notches at the boss's declared thresholds
+      for (const n of b.notches ?? []) {
+        Render.box(bx + Math.round(bw * n / b.maxHp), by, 1, 8, { fill: '#24121a' });
+      }
     }
 
     Render.text('MOVE ARROWS/WASD   JUMP SPACE(x2)   FIRE X   SWAP 1-4/Q-E   ESC PAUSE', cx, Render.h - 16, {

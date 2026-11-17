@@ -3,6 +3,9 @@
  * Bullets die on solids, world bounds, or when their range runs out.
  * Melee weapons spawn a SLASH: a short-lived no-wall hitbox with an
  * animated sweep arc (the strike motion).
+ * A bullet may carry grav (falls under gravity — enemy bombs) and a
+ * bomb flag: on a solid hit it EXPLODES with an AoE blast that hurts
+ * the player standing nearby (bomber drops, boss shockwaves).
  * ============================================================= */
 const Bullets = (() => {
   const list = [];
@@ -24,6 +27,8 @@ const Bullets = (() => {
         maxDist: def.range ?? Infinity,
         dist: 0,
         hostile: false,
+        grav: def.grav ?? 0,
+        bomb: def.bomb ?? false,
         hit: new Set(), // enemies already damaged by this bullet
       });
     }
@@ -48,11 +53,13 @@ const Bullets = (() => {
       maxDist: def.range ?? Infinity,
       dist: 0,
       hostile: true,
+      grav: def.grav ?? 0,
+      bomb: def.bomb ?? false,
       hit: new Set(),
     });
   }
 
-  // raw spawn (boss waves / pellet fans own the velocity math)
+  // raw spawn (boss waves / pellet fans / bombs own the velocity math)
   function spawnRaw(o) {
     list.push({
       x: o.x, y: o.y,
@@ -64,6 +71,8 @@ const Bullets = (() => {
       maxDist: o.range ?? Infinity,
       dist: 0,
       hostile: o.hostile ?? false,
+      grav: o.grav ?? 0,   // bombs fall under gravity
+      bomb: o.bomb ?? false,
       hit: new Set(),
     });
   }
@@ -90,9 +99,25 @@ const Bullets = (() => {
     });
   }
 
+  // bomb ground blast: burst + shake + AoE hurt to a nearby player
+  function explode(b, world) {
+    Particles.burst(b.x, b.y, 16, '#ff9f45', {
+      colors: ['#ff9f45', '#ffd23f', '#ffffff'], speed: 130, life: 0.6,
+    });
+    Sound.play('boom');
+    Camera.shake(3, 0.25);
+    const p = world.player;
+    if (p && !p.dead) {
+      const dx = (p.x + p.w / 2) - b.x;
+      const dy = (p.y + p.h / 2) - b.y;
+      if (dx * dx + dy * dy < 40 * 40) p.hurt(b.dmg + 1, dx < 0 ? 1 : -1);
+    }
+  }
+
   function update(dt, world) {
     for (let i = list.length - 1; i >= 0; i--) {
       const b = list[i];
+      if (b.grav) b.vy = Math.min(b.vy + b.grav * dt, 420); // gravity pull
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       b.dist += Math.hypot(b.vx, b.vy) * dt;
@@ -107,7 +132,8 @@ const Bullets = (() => {
       if (!dead && !b.noWall) {
         for (const s of world.solids) {
           if (Physics.overlap(b, s)) {
-            Particles.spark(b.x, b.y, b.color);
+            if (b.bomb) explode(b, world); // bombs detonate on any solid
+            else Particles.spark(b.x, b.y, b.color);
             dead = true;
             break;
           }
@@ -189,6 +215,19 @@ const Bullets = (() => {
     for (const b of list) {
       if (b.kind === 'slash') { drawSlash(ctx, b); continue; }
       const x = Math.round(b.x), y = Math.round(b.y);
+      if (b.bomb) {
+        // gravity bomb: dark shell, flickering fuse spark on top
+        const flick = Math.floor(b.dist / 6) % 2 === 0;
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = flick ? '#ffd23f' : '#ff9f45';
+        ctx.fillRect(x - 1, y - 1, b.w + 2, b.h + 2);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#2a2a38';
+        ctx.fillRect(x, y, b.w, b.h);
+        ctx.fillStyle = flick ? '#ffd23f' : '#ff5d5d';
+        ctx.fillRect(x + b.w / 2 - 1, y - 2, 2, 2);
+        continue;
+      }
       // soft glow underlay + body + hot white core
       ctx.globalAlpha = 0.35;
       ctx.fillStyle = b.color;
@@ -219,6 +258,7 @@ const Bullets = (() => {
     count: () => list.length,
     countHostile: () => list.filter((b) => b.hostile).length,
     first: () => list[0] ?? null, // test/debug hook
+    list: () => list,             // test/debug hook (bomb queries etc.)
     clear: () => { list.length = 0; flashes.length = 0; },
   };
 })();

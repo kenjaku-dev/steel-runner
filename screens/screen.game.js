@@ -2,14 +2,18 @@
  * screen.game.js — THE GAME: plays the ONE level registered by
  * the current page (LevelLoader.solo). Touching an open door
  * navigates to the next level's html page (levels advance by
- * page navigation); the boss page's door ends in a victory
+ * page navigation); a boss page's door ends in a victory
  * overlay that returns to the hub. Doors with a key stay
- * locked until the key is grabbed. Every 5th level is a boss.
+ * locked until the key is grabbed. Every 5th level is a boss
+ * (kind 1 at level 5, kind 2 at level 10). Health pickups
+ * guide the path and refill one heart; the highest level
+ * reached is saved so the menu offers CONTINUE.
  * ============================================================= */
 const ScreenGame = (() => {
   let level, levelIndex, world, player;
   let hasKey = false, victory = false, introT = 0;
-  let activated; // checkpoint flags touched this level
+  let activated;    // checkpoint flags touched this level
+  let collected;    // health pickups already used
 
   function enter() {
     levelIndex = LevelLoader.current;
@@ -18,6 +22,8 @@ const ScreenGame = (() => {
     victory = false;
     introT = 1.6;
     activated = new Set();
+    collected = new Set();
+    LevelLoader.saveProgress(levelIndex + 1); // menu CONTINUE knows this level
 
     player = Player.create(level.spawn.x, level.spawn.y);
     Camera.reset();
@@ -38,7 +44,8 @@ const ScreenGame = (() => {
       player,
     };
     world.boss = LevelLoader.isBoss(levelIndex)
-      ? Boss.create(level.bossSpawn ?? { x: level.w - 160, y: 202 })
+      ? Boss.create(level.bossSpawn ?? { x: level.w - 160, y: 202 },
+                    Math.min(2, Math.floor((levelIndex + 1) / 5)))
       : undefined;
 
     window.__game = { // test/debug hooks (live getters)
@@ -48,6 +55,7 @@ const ScreenGame = (() => {
       get levelIndex() { return levelIndex; },
       get hasKey() { return hasKey; },
       get victory() { return victory; },
+      get collectedCount() { return collected.size; },
     };
   }
 
@@ -117,6 +125,20 @@ const ScreenGame = (() => {
       Sound.play('pickup');
     }
 
+    // health pickups: refill ONE heart; at full health the heart stays
+    // available (so it can still guide the path and be used when hurt)
+    for (const pk of level.pickups ?? []) {
+      if (collected.has(pk)) continue;
+      if (!Physics.overlap(player, { x: pk.x, y: pk.y, w: 10, h: 10 })) continue;
+      if (player.hp >= player.maxHp) continue;
+      collected.add(pk);
+      player.hp = Math.min(player.maxHp, player.hp + 1);
+      Particles.burst(pk.x + 5, pk.y + 5, 8, CONFIG.COLORS.success, {
+        colors: [CONFIG.COLORS.success, '#ffffff'], speed: 70,
+      });
+      Sound.play('heal');
+    }
+
     // exit door -> next page (or in-page advance when several levels
     // share one page), or victory when this is the boss page
     if (!doorLocked() && Physics.overlap(player, doorRect())) {
@@ -124,6 +146,7 @@ const ScreenGame = (() => {
         Sound.play('door'); enter(); // registry mode: next level is here
       } else if (LevelLoader.isBoss(levelIndex)) {
         victory = true;              // boss page: victory -> hub
+        LevelLoader.saveProgress(levelIndex + 2); // CONTINUE jumps to the next world
         Sound.stopMusic();
         Sound.play('victory');
         Fx.flash(0.6);               // big moment: white-out
@@ -227,6 +250,26 @@ const ScreenGame = (() => {
       }
     }
 
+    // health pickups: bobbing pixel heart with a soft glow halo
+    for (const pk of level.pickups ?? []) {
+      if (collected.has(pk)) continue;
+      const bob = Math.round(Math.sin(performance.now() / 300 + pk.x) * 2);
+      const px = pk.x, py = pk.y + bob;
+      const ctx = Render.ctx;
+      ctx.fillStyle = 'rgba(93,220,122,0.16)';
+      ctx.fillRect(px - 3, py - 3, 16, 14);
+      // 7x6 heart bitmap (same shape as the HUD hearts)
+      const cells = ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
+      for (let r = 0; r < cells.length; r++) {
+        for (let c = 0; c < 7; c++) {
+          if (cells[r][c] === 'X') {
+            ctx.fillStyle = r === 0 && c === 2 ? '#ffffff' : CONFIG.COLORS.danger;
+            ctx.fillRect(px + c, py + r, 1, 1);
+          }
+        }
+      }
+    }
+
     // exit door: glowing portal (shimmer when open, sealed when locked)
     const locked = doorLocked();
     const d = doorRect();
@@ -288,11 +331,12 @@ const ScreenGame = (() => {
 
     // victory overlay (boss page): Enter/Esc returns to the hub
     if (victory) {
+      const bs = world.boss;
       Render.box(0, 0, Render.w, Render.h, { fill: 'rgba(6,6,12,0.72)' });
-      Render.text('YOU BEAT THE GUARDIAN!', cx, 100, {
+      Render.text('YOU BEAT THE ' + (bs?.short ?? 'BOSS') + '!', cx, 100, {
         size: CONFIG.UI.sizeTitle, color: C.primary, align: 'center', shadow: true,
       });
-      Render.text('THE GATE IS OPEN — MORE LEVELS COMING SOON', cx, 140, {
+      Render.text(bs?.victoryLine ?? 'THE GATE IS OPEN', cx, 140, {
         size: CONFIG.UI.sizeItem, color: C.text, align: 'center', shadow: true,
       });
       Render.text('ENTER = MENU', cx, 168, {

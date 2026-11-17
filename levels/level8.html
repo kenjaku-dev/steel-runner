@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEEL RUNNER — LEVEL 8: SKY ARCHIPELAGO</title>
+</head>
+<body>
+<!-- =====================================================
+  LEVEL 8 — self-contained page: the level data AND the full
+  game live in this ONE file. Edit the data block below to
+  change this level; boot.js (project root) loads the engine.
+  SKY ARCHIPELAGO: floating islands with real fall gaps.
+  The CHARGER debuts on the wide islands: it flashes white,
+  then dashes — bait the dash, then punish the stun.
+===================================================== -->
+<script src="../boot.js"></script>
+<script id="level-data">
+window.__START_LEVEL = 8; // boot straight into the game
+LevelLoader.solo(7, {
+  name: 'SKY ARCHIPELAGO',
+  theme: 'sky',
+  w: 2200, h: 270,
+  spawn: { x: 40, y: 200 },
+  exit: { x: 2120, y: 214 },
+  checkpoints: [{ x: 660, y: 230 }, { x: 1160, y: 230 }, { x: 1660, y: 230 }],
+  platforms: [
+    // island ground with real fall gaps between them
+    { x: 0,    y: 246, w: 420, h: 24 },
+    { x: 620,  y: 246, w: 300, h: 24 },
+    { x: 1120, y: 246, w: 380, h: 24 },
+    { x: 1620, y: 246, w: 580, h: 24 },
+    // gap bridges + high route
+    { x: 440,  y: 200, w: 64, h: 10 },
+    { x: 530,  y: 168, w: 64, h: 10 },
+    { x: 700,  y: 150, w: 72, h: 10 },
+    { x: 940,  y: 195, w: 64, h: 10 },
+    { x: 1030, y: 165, w: 64, h: 10 },
+    { x: 1240, y: 140, w: 72, h: 10 },
+    { x: 1400, y: 180, w: 72, h: 10 },
+    { x: 1512, y: 195, w: 64, h: 10 },
+    { x: 1800, y: 190, w: 72, h: 10 },
+    { x: 1950, y: 150, w: 72, h: 10 },
+  ],
+  pickups: [
+    { x: 460,  y: 186 },
+    { x: 1050, y: 151 },
+    { x: 1534, y: 181 },
+    { x: 1970, y: 136 },
+  ],
+  enemies: [
+    // chargers debut: readable tell, then a straight dash
+    { type: 'charger', x: 700,  y: 234 },
+    { type: 'charger', x: 1700, y: 234 },
+    { type: 'walker',  x: 200,  y: 236 },
+    { type: 'walker',  x: 1250, y: 236 },
+    { type: 'walker',  x: 1850, y: 236 },
+    { type: 'hopper',  x: 300,  y: 236 },
+    { type: 'hopper',  x: 1300, y: 236 },
+    { type: 'flyer',   x: 550,  y: 80 },
+    { type: 'flyer',   x: 1000, y: 70 },
+    { type: 'flyer',   x: 1450, y: 80 },
+    { type: 'turret',  x: 2020, y: 234 },
+  ],
+});
+</script>
+</body>
+</html>

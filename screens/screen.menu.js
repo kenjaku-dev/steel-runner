@@ -1,16 +1,30 @@
 /* =============================================================
  * screen.menu.js — MAIN MENU (own file for fast editing)
- * One primary CTA: START. Keyboard: Up/Down, Enter, Esc.
- * Backdrop: layered night scene (gradient sky, moon, two star
- * layers, parallax hills, ground strip) + Fx post effects.
+ * START (+ CONTINUE when saved progress exists). Keyboard:
+ * Up/Down, Enter, Esc. Backdrop: layered night scene (gradient
+ * sky, moon, two star layers, parallax hills, ground strip) +
+ * Fx post effects.
  * ============================================================= */
 const ScreenMenu = (() => {
-  // START = navigate to the first level page. The hub only hosts
-  // menu + settings; each level lives in its own self-contained page.
-  const items = [
-    { label: 'START', action: () => { location.href = 'levels/level1.html'; } },
-    { label: 'SETTINGS', action: () => Game.switchTo('settings') },
-  ];
+  // items rebuilt on every enter(): CONTINUE appears only when a
+  // saved progress exists (LevelLoader.saveProgress on level pages)
+  let items = [];
+
+  function buildItems() {
+    const prog = LevelLoader.progress();
+    const list = [];
+    if (prog > 1) {
+      list.push({
+        label: 'CONTINUE  L' + prog,
+        action: () => { location.href = 'levels/level' + prog + '.html'; },
+      });
+    }
+    list.push(
+      { label: 'START', action: () => { location.href = 'levels/level1.html'; } },
+      { label: 'SETTINGS', action: () => Game.switchTo('settings') },
+    );
+    items = list;
+  }
 
   let sel = 0;
   let stars = [];     // near layer: drifting
@@ -37,6 +51,7 @@ const ScreenMenu = (() => {
   }
 
   function enter() {
+    buildItems(); // CONTINUE row reflects the latest saved progress
     sel = 0;
     Sound.stopMusic(); // menus are quiet
     HUD.showWeaponBar(false); // no weapon strip in menus

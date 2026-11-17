@@ -20,7 +20,7 @@ No build tools, no dependencies. Open `index.html` in a browser and play.
 | Page | What it is |
 |---|---|
 | `index.html` | Hub: menu + settings. START opens `levels/level1.html`. Deep-link: `index.html?level=3` |
-| `levels/level1.html` … `levels/level5.html` | SELF-CONTAINED level pages: the level's data AND the whole game in ONE file — open = play/test that level instantly |
+| `levels/level1.html` … `levels/level10.html` | SELF-CONTAINED level pages: the level's data AND the whole game in ONE file — open = play/test that level instantly |
 | `boot.js` | SINGLE SOURCE of page HTML/CSS + script load order — every page includes only this (auto-detects `../` inside `levels/`) |
 
 Level progression is page navigation: a level's door opens
@@ -33,9 +33,10 @@ The real game code runs headless in Node with a simulated browser:
 node tests/smoke.js
 ```
 
-It boots all screens, walks the five level pages through their doors,
-fights the boss, and checks pause / game-over / the hub — simulating
-page navigation with a `location` stub. Run it after every change.
+It boots all screens, walks the ten level pages through their doors,
+fights both bosses, exercises the new enemies and pickups, and checks
+pause / game-over / the hub — simulating page navigation with a
+`location` stub. Run it after every change.
 
 ## Structure (each concern = one file, for fast editing & easy scaling)
 ```
@@ -57,21 +58,26 @@ systems/
   particles.js        bursts, landing dust, impact sparks (pure juice)
   sound.js            synth SFX + ONE COMPOSED SONG PER LEVEL (no files)
 entities/
-  bullets.js          one bullet system for all weapons + muzzle flashes
-  enemies.js          walker / flyer / turret + contact & bullet damage
+  bullets.js          one bullet system for all weapons + gravity bombs (AoE blasts)
+  enemies.js          walker / flyer / turret / hopper / bomber / charger
   player.js           player physics + pixel sprite + firing + health
-  boss.js             MECHA GUARDIAN: 3 phases, resets on player death
+  boss.js             TWO bosses (kind 1/2): 3 phases each, resets on player death
 levels/                every level = ONE self-contained html page
-  level.loader.js     registry + progression + themes (5th level = boss)
+  level.loader.js     registry + progression + themes + saved CONTINUE progress
   level1.html         FIRST STEPS (grass) — data + game in one file
   level2.html         DESERT OUTPOST (key + locked door)
   level3.html         CRYSTAL MINES (climb + flyers)
   level4.html         IRON FACTORY (gauntlet)
-  level5.html         GUARDIAN GATE (boss arena)
+  level5.html         GUARDIAN GATE (boss 1: MECHA GUARDIAN)
+  level6.html         CANOPY OUTPOST (jungle — hoppers debut)
+  level7.html         GLACIER VAULT (ice + key — bombers debut)
+  level8.html         SKY ARCHIPELAGO (fall gaps — chargers debut)
+  level9.html         MAGMA WORKS (the full gauntlet)
+  level10.html        THE IRON CORE (boss 2: VOLT WRAITH)
 screens/              every screen = own file, interface {enter,update,draw}
-  screen.menu.js      main menu (night scene, START -> levels/level1.html)
+  screen.menu.js      main menu (night scene, CONTINUE + START -> levels/)
   screen.settings.js  settings screen
-  screen.game.js      game screen: one level per page, doors navigate
+  screen.game.js      game screen: one level per page, doors navigate, pickups
   screen.pause.js     pause overlay (resume / restart level / quit)
   screen.gameover.js  game over (retry from checkpoint / quit)
 tests/
@@ -91,6 +97,7 @@ tests/
 10. [x] Double jump + SWORD melee weapon (animated strike arc)
 11. [x] Graphics overhaul: parallax backdrops, post effects, richer sprites
 12. [x] Audio overhaul: one composed song per level + DOM weapon strip
+13. [x] Worlds 6–10: five themed levels + songs, 3 new enemies (hopper / bomber / charger), boss 2 (VOLT WRAITH), health pickups, CONTINUE in the menu
 
 ## Balance (v1.1 — "beatable" patch)
 - Player: normal HP 5→6, hard 3→4; hit grace 1.0s→1.2s; softer knockback (no more pit launches)
@@ -131,20 +138,36 @@ tests/
 - **Master compressor**: music and SFX mix through one DynamicsCompressor, so peaks glue instead of clipping
 - **DOM weapon strip**: the weapon slots moved OUT of the game canvas into a real `#weaponbar` element below it (`boot.js` styles it, `hud.js` syncs it — rebuilds only when the weapon list changes, highlights only on change; the canvas auto-rescales so the strip never overlaps the game)
 
+## Worlds 6–10 & new threats (v0.7)
+- **Five new themed levels** (each with its own backdrop scene, palette and song):
+  - `jungle` CANOPY OUTPOST — teaches the HOPPER on wide safe ground
+  - `ice` GLACIER VAULT — keyed vault door; the BOMBER debuts overhead
+  - `sky` SKY ARCHIPELAGO — floating islands with real fall gaps; the CHARGER debuts
+  - `volcano` MAGMA WORKS — the full gauntlet: every enemy type together
+  - `core` THE IRON CORE — boss arena for VOLT WRAITH
+- **Three new enemy types**, each with a readable telegraph before it strikes (the core level-design rule: threat before damage):
+  - HOPPER: crouches (squash + blinking eye) then leaps a tall arc at the player
+  - BOMBER: patrols overhead, drops gravity BOMBS that explode on any solid with an AoE blast (bullets gained `grav` + `bomb` flags in `bullets.js`)
+  - CHARGER: flashes white (tell), then dashes; stuns when blocked — bait it, punish the stun
+- **Boss 2 — VOLT WRAITH** (level 10, hp 80): hover + rotating radial electric bursts, telegraphed dive-crashes that send ground shockwaves, rage phase with crackling arcs; bosses are now a `kind` (1 = MECHA GUARDIAN, 2 = VOLT WRAITH) carrying their own name / HUD notches / victory line
+- **Health pickups** (`pickups: [{x, y}]` in level data): bobbing pixel hearts placed on the intended path (player-directing, not decoration) — they refill ONE heart and stay available while you're at full health; every level 1–10 has them
+- **CONTINUE in the menu**: the highest level reached is saved to localStorage (`LevelLoader.saveProgress`); the menu shows CONTINUE L**N** above START, and boss victories bump it to the next world
+- **Older levels improved**: levels 1–5 gained path pickups; the boss-1 arena got hearts before the fight; the hub's `?level=` deep link now covers 1–10; boss-1's victory line points to the new worlds
+
 ## Git
-The repo tags mark playable milestones (`v0.1.0` → `v0.6.0`):
+The repo tags mark playable milestones (`v0.1.0` → `v0.7.0`):
 
 ```bash
 git status                    # what changed
 git add -A && git commit -m "what you changed"   # save a checkpoint
 git log --oneline             # history
-git checkout v0.6.0           # play an old version
+git checkout v0.7.0           # play an old version
 git checkout main             # back to latest
 ```
 
 ## How to extend
 - **New game file:** add ONE line to `boot.js` `SCRIPTS` — every page loads it automatically.
-- **New level:** copy `levels/level5.html` to `levels/level6.html`, change the `<title>` and the data block (`window.__START_LEVEL = 6`, `LevelLoader.solo(5, {...})` with your level data) — that's the whole level, nothing else to wire. The door auto-navigates to `level7.html`, and slots 4, 9, 14... are auto-flagged as boss levels (a boss-level door ends in the victory overlay instead).
+- **New level:** copy `levels/level10.html` to `levels/level11.html`, change the `<title>` and the data block (`window.__START_LEVEL = 11`, `LevelLoader.solo(10, {...})` with your level data) — that's the whole level, nothing else to wire. The door auto-navigates to `level12.html`, and slots 4, 9, 14... are auto-flagged as boss levels (a boss-level door ends in the victory overlay instead). Add the theme to `LevelLoader.THEMES`, `Backdrop.THEMES` and a `SONGS` entry.
 - **New weapon:** add one object in `systems/weapons.js` — number keys extend automatically.
 - **New screen:** create `screens/screen.X.js` with `{enter, update, draw}` and register it in `main.js` + `boot.js`.
 - **Tweak game feel:** edit `config/game.config.js` only.
