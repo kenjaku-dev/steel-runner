@@ -4,7 +4,7 @@
  * ============================================================= */
 const CONFIG = {
   TITLE: 'STEEL RUNNER',
-  VERSION: '0.3.0',
+  VERSION: '0.4.0',
 
   // Internal pixel resolution (16-bit look) — scaled up by integer factor
   CANVAS: { width: 480, height: 270 },
@@ -19,6 +19,8 @@ const CONFIG = {
     accel: 900,      // ground acceleration px/s²
     friction: 1000,  // ground deceleration px/s²
     jumpVel: 245,    // initial jump impulse px/s
+    maxJumps: 2,     // double jump: ground jump + one mid-air jump
+    airJump: 0.9,    // mid-air jump power (factor of jumpVel)
     gravity: 620,    // px/s²
     maxFall: 260,    // terminal velocity px/s
     jumpCut: 80,     // releasing jump early caps rise (variable jump)

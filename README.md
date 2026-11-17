@@ -11,8 +11,9 @@ No build tools, no dependencies. Open `index.html` in a browser and play.
 | Change setting value | Arrow Left/Right or A/D |
 | Pause | Escape (during play) |
 | Back | Escape |
+| Jump / double jump | Space, ArrowUp or W — tap again mid-air |
 | Fire | X or F (hold = autofire) |
-| Switch weapon | 1 / 2 / 3 or Q / E to cycle |
+| Switch weapon | 1 / 2 / 3 / 4 or Q / E to cycle |
 | Game over | Enter = retry from checkpoint, Esc = menu |
 
 ## Pages (open any of them — no server needed)
@@ -85,6 +86,7 @@ tests/
 7. [x] HUD, pause, game over screens wiring
 8. [x] Polish: particles, sound, jump feel, difficulty balance
 9. [x] Self-contained level pages: levels/levelN.html = data + game in one file
+10. [x] Double jump + SWORD melee weapon (animated strike arc)
 
 ## Balance (v1.1 — "beatable" patch)
 - Player: normal HP 5→6, hard 3→4; hit grace 1.0s→1.2s; softer knockback (no more pit launches)
@@ -99,14 +101,19 @@ tests/
 - Screen shake (toggle in Settings) on player hits, boss slams and boss death
 - Jump feel: landing squash & stretch + dust when dropping from height
 
+## Moves & Weapons (v0.4)
+- Double jump: tap jump again while airborne — slightly weaker than the ground jump, with a dust puff and a higher-pitched chirp; the air jump refills on landing
+- SWORD (key 4): melee weapon — an animated slash arc sweeps in front of the player (the strike motion), hits EVERY enemy in reach, no projectile, no recoil; dmg 2 every 0.34s
+- Weapons stay data-driven: a new weapon object in `systems/weapons.js` extends the 1/2/3/4... keys and the HUD bar automatically
+
 ## Git
-The repo tags mark playable milestones (`v0.1.0`, `v0.2.0`, `v0.3.0`):
+The repo tags mark playable milestones (`v0.1.0` → `v0.4.0`):
 
 ```bash
 git status                    # what changed
 git add -A && git commit -m "what you changed"   # save a checkpoint
 git log --oneline             # history
-git checkout v0.3.0           # play an old version
+git checkout v0.4.0           # play an old version
 git checkout main             # back to latest
 ```
 

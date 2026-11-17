@@ -11,6 +11,8 @@
  * kick     recoil applied to player velocity (px/s)
  * range    max travel px (Infinity = until wall / offscreen)
  * pierce   enemies a bullet can pass through (used from step 4)
+ * melee    true = no projectile; the weapon is a short-lived hitbox
+ * reach    melee hitbox size in px (in front of the player)
  * ============================================================= */
 const Weapons = (() => {
   const defs = {
@@ -32,9 +34,15 @@ const Weapons = (() => {
       kick: 25, range: Infinity, pierce: 99,
       w: 14, h: 2, color: CONFIG.COLORS.secondary,
     },
+    sword: {
+      name: 'SWORD', dmg: 2, fireRate: 0.34,
+      melee: true, reach: 34,   // slash hitbox px in front of the player
+      kick: 0, range: 0, pierce: 99, // one swing hits everything in the arc
+      w: 0, h: 0, color: '#dbe7ff', // steel blade
+    },
   };
 
-  const order = ['pistol', 'shotgun', 'laser'];
+  const order = ['pistol', 'shotgun', 'laser', 'sword'];
 
   return {
     defs,

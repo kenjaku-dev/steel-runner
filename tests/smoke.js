@@ -10,9 +10,10 @@ const DIR = '/home/achraf/project testing/2d plat game';
 /* ---------- browser stubs ---------- */
 const ctxMock = {
   imageSmoothingEnabled: true, fillStyle: '', strokeStyle: '', lineWidth: 1,
-  font: '', textAlign: '', textBaseline: '',
+  font: '', textAlign: '', textBaseline: '', globalAlpha: 1,
   fillRect() {}, strokeRect() {}, fillText() {},
   save() {}, restore() {}, translate() {}, scale() {},
+  beginPath() {}, arc() {}, stroke() {}, // slash arcs (sword strike motion)
 };
 const canvasMock = { getContext: () => ctxMock, style: {}, width: 0, height: 0 };
 globalThis.document = { getElementById: () => canvasMock };
@@ -164,6 +165,23 @@ for (let i = 0; i < 40; i++) { pump(1); if (p.y < minY2) minY2 = p.y; }
 assert.ok(groundY - minY2 < groundY - minY, 'jump cut did not shorten hop');
 assert.ok(p.grounded, 'player did not land after hop');
 
+// double jump: a second mid-air press adds a real second stage
+const djy = p.y;
+press(' '); pump(4);                       // stage 1: leave the ground
+assert.ok(!p.grounded, 'player did not jump (stage 1)');
+let apex1 = p.y;
+for (let i = 0; i < 14; i++) { pump(1); if (p.y < apex1) apex1 = p.y; }
+release(' '); pump(1);                     // a real tap releases between presses
+press(' '); pump(2);                       // stage 2: air jump
+assert.ok(p.vy < -100, 'double jump did not fire, vy=' + p.vy);
+let apex2 = apex1;
+for (let i = 0; i < 34; i++) { pump(1); if (p.y < apex2) apex2 = p.y; }
+release(' ');
+for (let i = 0; i < 80; i++) { pump(1); if (p.y < apex2) apex2 = p.y; }
+assert.ok(p.grounded, 'player did not land after double jump');
+assert.ok(djy - apex2 > djy - apex1 + 15,
+  'air jump added no height: ' + (djy - apex1) + ' -> ' + (djy - apex2));
+
 /* ---------- step 3: weapons ---------- */
 assert.strictEqual(p.weapon, 0, 'default weapon not pistol');
 
@@ -218,6 +236,18 @@ const c0 = Bullets.count();
 press('x'); pump(60);
 release('x');
 assert.ok(Bullets.count() >= c0 + 3, 'hold-to-fire did not autofire, count=' + Bullets.count());
+Bullets.clear();
+
+// sword (melee): one swing kills everything in its arc, then expires
+key('4'); pump(9); // swap + residual autofire cooldown must elapse
+assert.strictEqual(p.weapon, 3, 'did not switch to sword');
+Enemies.spawnAll([{ type: 'walker', x: p.x + 26, y: 236 }]);
+p.facing = 1;
+key('x'); pump(2); // hit lands this tick; the corpse is swept next tick
+assert.strictEqual(Enemies.count(), 0, 'sword slash did not kill the enemy in reach');
+assert.ok(Bullets.count() >= 1, 'slash hitbox missing');
+pump(15); // the strike motion (0.14s) must end
+assert.strictEqual(Bullets.count(), 0, 'slash hitbox lingered');
 Bullets.clear();
 
 /* ---------- step 4: enemies ---------- */

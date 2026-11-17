@@ -1,7 +1,8 @@
 /* =============================================================
  * bullets.js — ONE bullet system for every weapon + muzzle flashes.
  * Bullets die on solids, world bounds, or when their range runs out.
- * Damage to enemies lands in step 4 (uses def.pierce there).
+ * Melee weapons spawn a SLASH: a short-lived no-wall hitbox with an
+ * animated sweep arc (the strike motion).
  * ============================================================= */
 const Bullets = (() => {
   const list = [];
@@ -67,6 +68,28 @@ const Bullets = (() => {
     });
   }
 
+  // melee swing (sword): short-lived hitbox in front of the player that
+  // sweeps through EVERY enemy in reach, drawn as a sweeping arc.
+  function slash(def, cx, cy, facing) {
+    const reach = def.reach;
+    list.push({
+      x: cx + (facing > 0 ? 4 : -4 - reach),
+      y: cy - reach * 0.35,
+      w: reach, h: reach * 0.7,
+      vx: 0, vy: 0,
+      dmg: def.dmg,
+      pierce: 99,            // one swing hits everything in the arc
+      color: def.color,
+      maxDist: Infinity, dist: 0,
+      hostile: false,
+      hit: new Set(),
+      kind: 'slash',
+      noWall: true,          // a blade may overlap a wall
+      ttl: 0.14, ttl0: 0.14, // strike-motion window (also drives the arc)
+      cx, cy, facing, reach, // arc anchor (player center at swing time)
+    });
+  }
+
   function update(dt, world) {
     for (let i = list.length - 1; i >= 0; i--) {
       const b = list[i];
@@ -77,7 +100,11 @@ const Bullets = (() => {
       let dead = b.dist > b.maxDist ||
         b.x < -20 || b.x > world.w + 20 ||
         b.y < -20 || b.y > world.h + 20;
-      if (!dead) {
+      if (!dead && b.ttl !== undefined) {
+        b.ttl -= dt;         // melee slashes live on a timer, not range
+        if (b.ttl <= 0) dead = true;
+      }
+      if (!dead && !b.noWall) {
         for (const s of world.solids) {
           if (Physics.overlap(b, s)) {
             Particles.spark(b.x, b.y, b.color);
@@ -123,8 +150,33 @@ const Bullets = (() => {
     }
   }
 
+  // the strike motion: a bright arc sweeping through its short life
+  function drawSlash(ctx, b) {
+    const prog = 1 - b.ttl / b.ttl0;   // 0..1 sweep progress
+    const a0 = -1.35, a1 = 0.85;       // up-behind -> down-front sweep
+    const tip = a0 + (a1 - a0) * prog;
+    ctx.save();
+    ctx.translate(Math.round(b.cx), Math.round(b.cy));
+    ctx.scale(b.facing, 1);            // mirror for left-facing swings
+    ctx.globalAlpha = 0.25 + 0.65 * (1 - prog); // trail fades as it ends
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, b.reach, a0, tip);
+    ctx.stroke();
+    // hot white leading edge at the sweep tip
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, b.reach, Math.max(a0, tip - 0.3), tip);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function draw(ctx) {
     for (const b of list) {
+      if (b.kind === 'slash') { drawSlash(ctx, b); continue; }
       ctx.fillStyle = b.color;
       ctx.fillRect(Math.round(b.x), Math.round(b.y), b.w, b.h);
     }
@@ -136,7 +188,7 @@ const Bullets = (() => {
   }
 
   return {
-    fire, fireAimed, spawnRaw, flash, update, draw,
+    fire, fireAimed, spawnRaw, slash, flash, update, draw,
     count: () => list.length,
     countHostile: () => list.filter((b) => b.hostile).length,
     first: () => list[0] ?? null, // test/debug hook

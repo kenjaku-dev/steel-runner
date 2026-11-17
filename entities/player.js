@@ -103,6 +103,7 @@ const Player = (() => {
       grounded: false,
       coyote: 0,
       jumpBuffer: 0,
+      jumpsLeft: 0,  // air jumps remaining (double jump)
       animT: 0,
       weapon: 0,     // index into Weapons.order
       cooldown: 0,
@@ -131,9 +132,9 @@ const Player = (() => {
 
         // weapons: select + fire (tap, or hold to autofire)
         this.cooldown -= dt;
-        if (Input.justPressed('1')) this.switchWeapon(0);
-        if (Input.justPressed('2')) this.switchWeapon(1);
-        if (Input.justPressed('3')) this.switchWeapon(2);
+        for (let k = 0; k < Weapons.count(); k++) {
+          if (Input.justPressed(String(k + 1))) this.switchWeapon(k);
+        }
         if (Input.justPressed('q')) this.cycleWeapon(-1);
         if (Input.justPressed('e')) this.cycleWeapon(1);
         if ((Input.justPressed('x', 'f') || Input.down('x', 'f')) && this.cooldown <= 0) {
@@ -145,11 +146,23 @@ const Player = (() => {
         this.jumpBuffer = Input.justPressed(' ', 'ArrowUp', 'w')
           ? P.jumpBuffer : this.jumpBuffer - dt;
 
-        if (this.jumpBuffer > 0 && this.coyote > 0) {
-          this.vy = -P.jumpVel;
-          this.coyote = 0;
-          this.jumpBuffer = 0;
-          Sound.play('jump');
+        // double jump: the air jump refills while grounded
+        if (this.grounded) this.jumpsLeft = P.maxJumps - 1;
+
+        if (this.jumpBuffer > 0) {
+          if (this.coyote > 0) {
+            this.vy = -P.jumpVel;
+            this.coyote = 0;
+            this.jumpBuffer = 0;
+            Sound.play('jump');
+          } else if (this.jumpsLeft > 0) {
+            // mid-air jump: slightly weaker, with a dust puff + higher chirp
+            this.jumpsLeft--;
+            this.vy = -P.jumpVel * P.airJump;
+            this.jumpBuffer = 0;
+            Sound.play('jump2');
+            Particles.puff(this.x + this.w / 2, this.y + this.h);
+          }
         }
 
         // variable jump height: releasing early caps the rise
@@ -182,8 +195,13 @@ const Player = (() => {
 
       fire() {
         const def = Weapons.get(this.weapon);
-        Sound.play(Weapons.order[this.weapon]); // pistol | shotgun | laser
+        Sound.play(Weapons.order[this.weapon]); // pistol | shotgun | laser | sword
         this.cooldown = def.fireRate;
+        if (def.melee) {
+          // sword: animated slash hitbox — no projectile, no recoil
+          Bullets.slash(def, this.x + this.w / 2, this.y + this.h / 2, this.facing);
+          return;
+        }
         const mx = this.facing > 0 ? this.x + this.w + 2 : this.x - 2;
         const my = this.y + 7;
         Bullets.fire(def, mx, my, this.facing);
@@ -254,8 +272,10 @@ const Player = (() => {
             }
           }
           // weapon glyph in hand (flips with facing)
-          ctx.fillStyle = Weapons.get(this.weapon).color;
-          ctx.fillRect(11, 7, 4, 2);
+          const wdef = Weapons.get(this.weapon);
+          ctx.fillStyle = wdef.color;
+          if (wdef.melee) ctx.fillRect(11, 1, 3, 8); // blade held upright
+          else ctx.fillRect(11, 7, 4, 2);
         }
         ctx.restore();
       },

@@ -49,7 +49,7 @@ const HUD = (() => {
       });
     }
 
-    Render.text('MOVE ARROWS/WASD   JUMP SPACE   FIRE X   SWAP 1-3/Q-E   ESC PAUSE', cx, Render.h - 16, {
+    Render.text('MOVE ARROWS/WASD   JUMP SPACE(x2)   FIRE X   SWAP 1-4/Q-E   ESC PAUSE', cx, Render.h - 16, {
       size: CONFIG.UI.sizeSmall, color: C.textDim, align: 'center',
     });
   }
